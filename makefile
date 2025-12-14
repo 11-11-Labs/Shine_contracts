@@ -9,11 +9,11 @@ BASE_SEPOLIA_ARGS := --rpc-url $(RPC_URL_BASE_SEPOLIA) \
 
 deployTestnet:
 	@forge clean
-	@echo "Deploying SongDataBase to Base testnet"
-	@forge script script/SongDataBase.s.sol:SongDataBaseScript $(BASE_SEPOLIA_ARGS)
+	@echo "Deploying SongDB to Base testnet"
+	@forge script script/SongDB.s.sol:SongDBScript $(BASE_SEPOLIA_ARGS)
 
 unitTest:
-	@echo "Running SongDataBase unit tests"
+	@echo "Running SongDB unit tests"
 	@forge 	test --match-path \
-			test/unit/$(TEST_TYPE)/SongDataBase.t.sol \
+			test/unit/$(TEST_TYPE)/SongDB.t.sol \
 			--summary --detailed --gas-report -vvvvv --show-progress

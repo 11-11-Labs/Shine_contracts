@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {SongDataBase} from "@shine/SongDataBase.sol";
+import {SongDB} from "@shine/SongDB/SongDB.sol";
 import {Constants} from "../../Constants.sol";
 
-contract SongDataBaseTest is Test, Constants {
-    SongDataBase public songDataBase;
+contract SongDBTest is Test, Constants {
+    SongDB public songDataBase;
 
     function setUp() public {
-        songDataBase = new SongDataBase(ADMIN.Address);
+        songDataBase = new SongDB(ADMIN.Address);
     }
 
     function test_unitCorrect_newSong() public {
@@ -27,7 +27,7 @@ contract SongDataBaseTest is Test, Constants {
         );
         assertEq(songId, 1);
 
-        SongDataBase.SongMetadata memory song = songDataBase.getSongMetadata(1);
+        SongDB.SongMetadata memory song = songDataBase.getSongMetadata(1);
 
         assertEq(song.title, "Song Title");
         assertEq(song.artistName, "Artist Name");
@@ -91,7 +91,7 @@ contract SongDataBaseTest is Test, Constants {
         );
         vm.stopPrank();
 
-        SongDataBase.SongMetadata memory song = songDataBase.getSongMetadata(1);
+        SongDB.SongMetadata memory song = songDataBase.getSongMetadata(1);
         assertEq(song.title, "Edited Song Title");
         assertEq(song.artistName, "Edited Artist Name");
         assertEq(song.mediaURI, "editedMediaURI");
@@ -126,10 +126,10 @@ contract SongDataBaseTest is Test, Constants {
         assertEq(userCollection[0], 1);
         assertEq(userCollection[1], 2);
 
-        SongDataBase.SongMetadata memory songOne = songDataBase.getSongMetadata(
+        SongDB.SongMetadata memory songOne = songDataBase.getSongMetadata(
             1
         );
-        SongDataBase.SongMetadata memory songTwo = songDataBase.getSongMetadata(
+        SongDB.SongMetadata memory songTwo = songDataBase.getSongMetadata(
             2
         );
 
@@ -165,10 +165,10 @@ contract SongDataBaseTest is Test, Constants {
         assertEq(userCollection.length, 1);
         assertEq(userCollection[0], 2);
 
-        SongDataBase.SongMetadata memory songOne = songDataBase.getSongMetadata(
+        SongDB.SongMetadata memory songOne = songDataBase.getSongMetadata(
             1
         );
-        SongDataBase.SongMetadata memory songTwo = songDataBase.getSongMetadata(
+        SongDB.SongMetadata memory songTwo = songDataBase.getSongMetadata(
             2
         );
 
@@ -194,7 +194,7 @@ contract SongDataBaseTest is Test, Constants {
         songDataBase.proposeNewAdminAddress(PROPOSED_ADMIN.Address);
         vm.stopPrank();
 
-        SongDataBase.AddressTypeProposal memory adminStruct = songDataBase
+        SongDB.AddressTypeProposal memory adminStruct = songDataBase
             .getAdminStructure();
 
         assertEq(adminStruct.current, ADMIN.Address);
@@ -214,7 +214,7 @@ contract SongDataBaseTest is Test, Constants {
         vm.startPrank(ADMIN.Address);
         songDataBase.cancelNewAdminAddress();
         vm.stopPrank();
-        SongDataBase.AddressTypeProposal memory adminStruct = songDataBase
+        SongDB.AddressTypeProposal memory adminStruct = songDataBase
             .getAdminStructure();
 
         assertEq(adminStruct.current, ADMIN.Address);
@@ -228,7 +228,7 @@ contract SongDataBaseTest is Test, Constants {
         songDataBase.executeNewAdminAddress();
         vm.stopPrank();
 
-        SongDataBase.AddressTypeProposal memory adminStruct = songDataBase
+        SongDB.AddressTypeProposal memory adminStruct = songDataBase
             .getAdminStructure();
 
         assertEq(adminStruct.current, PROPOSED_ADMIN.Address);

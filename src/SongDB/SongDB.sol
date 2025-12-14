@@ -8,17 +8,17 @@ pragma solidity ^0.8.20;
 /___,/_n_/_/_/|_/___/  ヌ
                       
                                                             
- * @title Shine SongDataBase
+ * @title Shine SongDB
  * @author 11:11 Labs 
  * @notice This contract manages song metadata, user purchases, 
  *         and admin functionalities for the Shine platform.
  */
 
-import {ErrorsLib} from "@shine/lib/ErrorsLib.sol";
-import {EventsLib} from "@shine/lib/EventsLib.sol";
+import {ErrorsLib} from "@shine/SongDB/lib/ErrorsLib.sol";
+import {EventsLib} from "@shine/SongDB/lib/EventsLib.sol";
 import {SafeTransferLib} from "@solady/utils/SafeTransferLib.sol";
 
-contract SongDataBase {
+contract SongDB {
     // 🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮶 Structs 🮵🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙
 
     /**

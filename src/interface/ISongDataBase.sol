@@ -8,13 +8,13 @@ pragma solidity ^0.8.20;
 /___,/_n_/_/_/|_/___/  ヌ
                       
                                                             
- * @title ISongDataBase Interface
+ * @title ISongDB Interface
  * @author 11:11 Labs 
- * @notice Interface for the Shine SongDataBase contract that manages song metadata,
+ * @notice Interface for the Shine SongDB contract that manages song metadata,
  *         user purchases, and admin functionalities for the Shine platform.
  */
 
-interface ISongDataBase {
+interface ISongDB {
     // 🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮶 Structs 🮵🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙🮙
 
     /**
