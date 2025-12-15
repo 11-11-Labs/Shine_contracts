@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {SongDB} from "@shine/SongDB/SongDB.sol";
+import {SongDB} from "@shine/contracts/SongDB/SongDB.sol";
 import {Constants} from "../../Constants.sol";
 
 contract SongDBTest is Test, Constants {

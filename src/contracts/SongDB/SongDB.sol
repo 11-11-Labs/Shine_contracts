@@ -14,8 +14,8 @@ pragma solidity ^0.8.20;
  *         and admin functionalities for the Shine platform.
  */
 
-import {ErrorsLib} from "@shine/SongDB/lib/ErrorsLib.sol";
-import {EventsLib} from "@shine/SongDB/lib/EventsLib.sol";
+import {ErrorsLib} from "@shine/contracts/SongDB/lib/ErrorsLib.sol";
+import {EventsLib} from "@shine/contracts/SongDB/lib/EventsLib.sol";
 import {SafeTransferLib} from "@solady/utils/SafeTransferLib.sol";
 
 contract SongDB {

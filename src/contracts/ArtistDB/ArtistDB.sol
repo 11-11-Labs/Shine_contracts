@@ -13,7 +13,7 @@ pragma solidity ^0.8.20;
  * @notice This contract manages artist registrations and their associated data.
  */
 
-import {ErrorsLib} from "@shine/ArtistDB/lib/ErrorsLib.sol";
+import {ErrorsLib} from "@shine/contracts/ArtistDB/lib/ErrorsLib.sol";
 import {SafeTransferLib} from "@solady/utils/SafeTransferLib.sol";
 
 contract ArtistDB {
