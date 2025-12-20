@@ -13,17 +13,10 @@ pragma solidity ^0.8.20;
  * @notice This contract manages artist registrations and their associated data.
  */
 
-import {ErrorsLib} from "@shine/contracts/ArtistDB/lib/ErrorsLib.sol";
-import {SafeTransferLib} from "@solady/utils/SafeTransferLib.sol";
+import {IdUtils} from "@shine/library/IdUtils.sol";
+import {Ownable} from "@solady/auth/Ownable.sol";
 
-contract ArtistDB {
-
-    struct AddressTypeProposal {
-        address current;
-        address proposed;
-        uint256 timeToExecuteProposal;
-    }
-
+contract ArtistDB is IdUtils, Ownable {
     struct Artist {
         string name;
         string metadataURI;
@@ -32,27 +25,20 @@ contract ArtistDB {
         uint256 accumulatedRoyalties;
     }
 
-    uint256 _nextTokenId;
+    mapping(uint256 Id => Artist) private artists;
 
-    AddressTypeProposal private apiCaller;
-
-    mapping(uint256 => Artist) artists;
-
-    modifier onlyAPICaller() {
-        if (msg.sender != apiCaller.current) {
-            revert ErrorsLib.UnauthorizedCaller();
-        }
-        _;
+    constructor(address _orchestratorAddress) {
+        _initializeOwner(_orchestratorAddress);
     }
 
-    function registerArtist(
+    function register(
         string memory name,
         string memory metadataURI,
         address payable artistAddress
-    ) external returns (uint256) {
-        _nextTokenId++;
+    ) external onlyOwner returns (uint256) {
+        uint256 idAssigned = _getNextId();
 
-        artists[_nextTokenId] = Artist({
+        artists[idAssigned] = Artist({
             name: name,
             metadataURI: metadataURI,
             artistAddress: artistAddress,
@@ -60,33 +46,35 @@ contract ArtistDB {
             accumulatedRoyalties: 0
         });
 
-        return _nextTokenId;
+        return idAssigned;
     }
 
-    function proposeAPICallerChange(address newAPICaller) onlyAPICaller external {
-        apiCaller.proposed = newAPICaller;
-        apiCaller.timeToExecuteProposal = block.timestamp + 1 days;
+    function change(
+        uint256 id,
+        string memory name,
+        string memory metadataURI,
+        address payable artistAddress
+    ) external onlyOwner {
+        artists[id] = Artist({
+            name: name,
+            metadataURI: metadataURI,
+            artistAddress: artistAddress,
+            totalEarnings: artists[id].totalEarnings,
+            accumulatedRoyalties: artists[id].accumulatedRoyalties
+        });
     }
 
-    function cancelAPICallerChange() onlyAPICaller external {
-        apiCaller.proposed = address(0);
-        apiCaller.timeToExecuteProposal = 0;
+    function getArtist(uint256 id) external view returns (Artist memory) {
+        return artists[id];
     }
 
-    function executeAPICallerChange() onlyAPICaller external {
-        if (
-            apiCaller.proposed == address(0) ||
-            block.timestamp < apiCaller.timeToExecuteProposal
-        ) {
-            revert ErrorsLib.InvalidProposalExecution();
-        }
-
-        apiCaller.current = apiCaller.proposed;
-        apiCaller.proposed = address(0);
-        apiCaller.timeToExecuteProposal = 0;
+    function hasArtist(uint256 id) external view returns (bool) {
+        return bytes(artists[id].name).length != 0;
     }
 
-    function getArtist(uint256 artistId) external view returns (Artist memory) {
-        return artists[artistId];
+    function getArtistAddress(
+        uint256 id
+    ) external view returns (address payable) {
+        return artists[id].artistAddress;
     }
 }

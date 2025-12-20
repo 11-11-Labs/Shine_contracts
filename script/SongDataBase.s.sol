@@ -13,7 +13,6 @@ contract SongDBScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        songDataBase = new SongDB(ADMIN);
 
         vm.stopBroadcast();
     }
