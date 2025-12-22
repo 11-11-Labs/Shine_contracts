@@ -20,12 +20,13 @@ contract ArtistDB is IdUtils, Ownable {
     struct Artist {
         string name;
         string metadataURI;
-        address payable artistAddress;
+        address artistAddress;
         uint256 totalEarnings;
         uint256 accumulatedRoyalties;
     }
 
-    mapping(uint256 Id => Artist) private artists;
+    mapping(address artistAddress => uint256 id) private addressArtist;
+    mapping(uint256 id => Artist) private artists;
 
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
@@ -34,7 +35,7 @@ contract ArtistDB is IdUtils, Ownable {
     function register(
         string memory name,
         string memory metadataURI,
-        address payable artistAddress
+        address artistAddress
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
@@ -49,19 +50,30 @@ contract ArtistDB is IdUtils, Ownable {
         return idAssigned;
     }
 
-    function change(
+    function changeBasicData(
         uint256 id,
         string memory name,
-        string memory metadataURI,
-        address payable artistAddress
+        string memory metadataURI
     ) external onlyOwner {
-        artists[id] = Artist({
-            name: name,
-            metadataURI: metadataURI,
-            artistAddress: artistAddress,
-            totalEarnings: artists[id].totalEarnings,
-            accumulatedRoyalties: artists[id].accumulatedRoyalties
-        });
+        if (bytes(artists[id].name).length == 0) {
+            revert();
+        }
+
+        artists[id].name = name;
+        artists[id].metadataURI = metadataURI;
+    }
+
+    function changeArtistAddress(
+        uint256 id,
+        address newArtistAddress
+    ) external onlyOwner {
+        if (bytes(artists[id].name).length == 0) {
+            revert();
+        }
+
+        addressArtist[artists[id].artistAddress] = 0;
+        artists[id].artistAddress = newArtistAddress;
+        addressArtist[newArtistAddress] = id;
     }
 
     function addEarnings(uint256 artistId, uint256 amount) external onlyOwner {
@@ -93,16 +105,19 @@ contract ArtistDB is IdUtils, Ownable {
         return artists[id];
     }
 
-
     function exists(uint256 id) external view returns (bool) {
         return
             bytes(artists[id].name).length != 0 &&
             artists[id].artistAddress != address(0);
     }
 
-    function getArtistAddress(
-        uint256 id
-    ) external view returns (address payable) {
+    function getArtistAddress(uint256 id) external view returns (address) {
         return artists[id].artistAddress;
+    }
+
+    function getArtistId(
+        address artistAddress
+    ) external view returns (uint256) {
+        return addressArtist[artistAddress];
     }
 }

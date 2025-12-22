@@ -20,10 +20,11 @@ contract UserDB is IdUtils, Ownable {
     struct User {
         string username;
         string metadataURI;
-        address payable userAddress;
+        address userAddress;
         uint256[] purchasedSongIds;
     }
 
+    mapping(address userAddress => uint256 id) private addressUser;
     mapping(uint256 Id => User) private users;
 
     constructor(address _orchestratorAddress) {
@@ -44,21 +45,34 @@ contract UserDB is IdUtils, Ownable {
             purchasedSongIds: new uint256[](0)
         });
 
+        addressUser[userAddress] = idAssigned;
+
         return idAssigned;
     }
 
-    function change(
+    function changeBasicData(
         uint256 id,
         string memory username,
-        string memory metadataURI,
-        address payable userAddress
+        string memory metadataURI
     ) external onlyOwner {
-        users[id] = User({
-            username: username,
-            metadataURI: metadataURI,
-            userAddress: userAddress,
-            purchasedSongIds: users[id].purchasedSongIds
-        });
+        if (bytes(users[id].username).length == 0) {
+            revert();
+        }
+        users[id].username = username;
+        users[id].metadataURI = metadataURI;
+    }
+
+    function changeUserAddress(
+        uint256 id,
+        address newUserAddress
+    ) external onlyOwner {
+        if (bytes(users[id].username).length == 0) {
+            revert();
+        }
+
+        addressUser[users[id].userAddress] = 0;
+        users[id].userAddress = newUserAddress;
+        addressUser[newUserAddress] = id;
     }
 
     function addSongIdToUser(
@@ -98,9 +112,11 @@ contract UserDB is IdUtils, Ownable {
             users[id].userAddress != address(0);
     }
 
-    function getUserAddress(
-        uint256 id
-    ) external view returns (address payable) {
+    function getUserAddress(uint256 id) external view returns (address) {
         return users[id].userAddress;
+    }
+
+    function getUserId(address userAddress) external view returns (uint256) {
+        return addressUser[userAddress];
     }
 }
