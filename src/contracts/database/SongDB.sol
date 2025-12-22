@@ -120,10 +120,15 @@ contract SongDB is IdUtils, Ownable {
         songs[id].price = price;
     }
 
-    function getSongMetadata(
-        uint256 id
-    ) external view returns (SongMetadata memory) {
-        return songs[id];
+    function exists(uint256 id) external view returns (bool) {
+        return bytes(songs[id].title).length != 0;
+    }
+
+    function canUserBuy(
+        uint256 id,
+        uint256 userId
+    ) external view returns (bool) {
+        return isBoughtByUserId[id][userId];
     }
 
     function hasUserPurchasedSong(
@@ -131,5 +136,19 @@ contract SongDB is IdUtils, Ownable {
         uint256 userId
     ) external view returns (bool) {
         return isBoughtByUserId[id][userId];
+    }
+
+    function getPrice(uint256 id) external view returns (uint256) {
+        return songs[id].price;
+    }
+
+    function getPrincipalArtistId(uint256 id) external view returns (uint256) {
+        return songs[id].principalArtistId;
+    }
+
+    function getSongMetadata(
+        uint256 id
+    ) external view returns (SongMetadata memory) {
+        return songs[id];
     }
 }

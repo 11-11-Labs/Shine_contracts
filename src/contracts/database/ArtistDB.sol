@@ -93,8 +93,11 @@ contract ArtistDB is IdUtils, Ownable {
         return artists[id];
     }
 
-    function hasArtist(uint256 id) external view returns (bool) {
-        return bytes(artists[id].name).length != 0;
+
+    function exists(uint256 id) external view returns (bool) {
+        return
+            bytes(artists[id].name).length != 0 &&
+            artists[id].artistAddress != address(0);
     }
 
     function getArtistAddress(

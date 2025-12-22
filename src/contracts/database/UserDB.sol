@@ -82,9 +82,7 @@ contract UserDB is IdUtils, Ownable {
         }
     }
 
-    function getUser(
-        uint256 id
-    ) external view returns (User memory) {
+    function getUser(uint256 id) external view returns (User memory) {
         return users[id];
     }
 
@@ -94,8 +92,10 @@ contract UserDB is IdUtils, Ownable {
         return users[userId].purchasedSongIds;
     }
 
-    function hasUser(uint256 id) external view returns (bool) {
-        return bytes(users[id].username).length != 0;
+    function exists(uint256 id) external view returns (bool) {
+        return
+            bytes(users[id].username).length != 0 &&
+            users[id].userAddress != address(0);
     }
 
     function getUserAddress(
@@ -103,5 +103,4 @@ contract UserDB is IdUtils, Ownable {
     ) external view returns (address payable) {
         return users[id].userAddress;
     }
-    
 }
