@@ -64,6 +64,31 @@ contract ArtistDB is IdUtils, Ownable {
         });
     }
 
+    function addEarnings(uint256 artistId, uint256 amount) external onlyOwner {
+        artists[artistId].totalEarnings += amount;
+    }
+
+    function deductEarnings(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyOwner {
+        artists[artistId].totalEarnings -= amount;
+    }
+
+    function addAccumulatedRoyalties(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyOwner {
+        artists[artistId].accumulatedRoyalties += amount;
+    }
+
+    function deductAccumulatedRoyalties(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyOwner {
+        artists[artistId].accumulatedRoyalties -= amount;
+    }
+
     function getArtist(uint256 id) external view returns (Artist memory) {
         return artists[id];
     }
