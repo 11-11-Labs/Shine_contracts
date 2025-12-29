@@ -77,23 +77,22 @@ contract UserDB is IdUtils, Ownable {
         addressUser[newUserAddress] = id;
     }
 
-    function addSong(
-        uint256 userId,
-        uint256 songId
-    ) external onlyOwner {
+    function addSong(uint256 userId, uint256 songId) external onlyOwner {
         users[userId].purchasedSongIds.push(songId);
     }
 
-    function removeSong(
-        uint256 userId,
-        uint256 songId
-    ) external onlyOwner {
+    function deleteSong(uint256 userId, uint256 songId) external onlyOwner {
         uint256[] storage songIds = users[userId].purchasedSongIds;
         uint256 len = songIds.length;
 
         for (uint256 i; i < len; ) {
             if (songIds[i] == songId) {
-                songIds[i] = songIds[len - 1];
+                for (uint256 j = i; j < len - 1; ) {
+                    songIds[j] = songIds[j + 1];
+                    unchecked {
+                        ++j;
+                    }
+                }
                 songIds.pop();
                 break;
             }
@@ -121,25 +120,43 @@ contract UserDB is IdUtils, Ownable {
         uint256[] calldata songIdsToDelete
     ) external onlyOwner {
         uint256[] storage songIds = users[userId].purchasedSongIds;
+        uint256 len = songIds.length;
         uint256 deleteLen = songIdsToDelete.length;
 
-        for (uint256 j; j < deleteLen; ) {
-            uint256 targetId = songIdsToDelete[j];
-            uint256 len = songIds.length;
+        uint256 writeIndex;
 
-            for (uint256 i; i < len; ) {
-                if (songIds[i] == targetId) {
-                    songIds[i] = songIds[len - 1];
-                    songIds.pop();
+        for (uint256 i; i < len; ) {
+            bool shouldDelete;
+
+            // Verificar si el songId actual está en la lista de eliminación
+            for (uint256 j; j < deleteLen; ) {
+                if (songIds[i] == songIdsToDelete[j]) {
+                    shouldDelete = true;
                     break;
                 }
                 unchecked {
-                    ++i;
+                    ++j;
                 }
             }
-            unchecked {
-                ++j;
+
+            // Si no se debe eliminar, mantenerlo
+            if (!shouldDelete) {
+                if (writeIndex != i) {
+                    songIds[writeIndex] = songIds[i];
+                }
+                unchecked {
+                    ++writeIndex;
+                }
             }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Remover los elementos sobrantes al final
+        while (songIds.length > writeIndex) {
+            songIds.pop();
         }
     }
 
@@ -155,7 +172,7 @@ contract UserDB is IdUtils, Ownable {
         return users[id];
     }
 
-    function getPurchasedSongIds(
+    function getPurchasedSong(
         uint256 userId
     ) external view returns (uint256[] memory) {
         return users[userId].purchasedSongIds;
