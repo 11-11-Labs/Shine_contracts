@@ -194,9 +194,11 @@ contract UserDB_test_unit_correct is Constants {
         songsAfter[1] = 101;
         songsAfter[2] = 102;
         songsAfter[3] = 103;
+        //songToDelete  104;
         songsAfter[4] = 105;
         songsAfter[5] = 106;
         songsAfter[6] = 107;
+        //songToDelete  108;
         songsAfter[7] = 109;
 
         uint256[] memory songsToDelete = new uint256[](2);
