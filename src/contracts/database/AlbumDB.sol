@@ -19,16 +19,16 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract AlbumDB is IdUtils, Ownable {
     struct SongMetadata {
-        string title;
-        uint256 principalArtistId;
-        string metadataURI;
-        uint256[] musicIds;
-        uint256 price;
-        uint256 timesBought;
-        bool canBePurchased;
-        bool isASpecialEdition;
-        string specialEditionName;
-        uint256 maxSupplySpecialEdition;
+        string Title;
+        uint256 PrincipalArtistId;
+        string MetadataURI;
+        uint256[] MusicIds;
+        uint256 Price;
+        uint256 TimesBought;
+        bool CanBePurchased;
+        bool IsASpecialEdition;
+        string SpecialEditionName;
+        uint256 MaxSupplySpecialEdition;
     }
 
     mapping(uint256 Id => mapping(uint256 userId => bool)) isBoughtByUserId;
@@ -52,16 +52,16 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 idAssigned = _getNextId();
 
         albums[idAssigned] = SongMetadata({
-            title: title,
-            principalArtistId: principalArtistId,
-            metadataURI: metadataURI,
-            musicIds: songIDs,
-            price: price,
-            timesBought: 0,
-            canBePurchased: canBePurchased,
-            isASpecialEdition: isASpecialEdition,
-            specialEditionName: specialEditionName,
-            maxSupplySpecialEdition: maxSupplySpecialEdition
+            Title: title,
+            PrincipalArtistId: principalArtistId,
+            MetadataURI: metadataURI,
+            MusicIds: songIDs,
+            Price: price,
+            TimesBought: 0,
+            CanBePurchased: canBePurchased,
+            IsASpecialEdition: isASpecialEdition,
+            SpecialEditionName: specialEditionName,
+            MaxSupplySpecialEdition: maxSupplySpecialEdition
         });
 
         return idAssigned;
@@ -73,12 +73,12 @@ contract AlbumDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256[] memory) {
         if (isBoughtByUserId[id][userId]) revert();
 
-        if (!albums[id].canBePurchased) revert();
+        if (!albums[id].CanBePurchased) revert();
 
         isBoughtByUserId[id][userId] = true;
-        albums[id].timesBought++;
+        albums[id].TimesBought++;
 
-        return albums[id].musicIds;
+        return albums[id].MusicIds;
     }
 
     function purchaseSpecialEdition(
@@ -87,17 +87,16 @@ contract AlbumDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256[] memory) {
         if (isBoughtByUserId[id][userId]) revert();
 
-        if (!albums[id].canBePurchased) revert();
+        if (!albums[id].CanBePurchased) revert();
 
-        if (!albums[id].isASpecialEdition) revert();
+        if (!albums[id].IsASpecialEdition) revert();
 
-        if (albums[id].timesBought >= albums[id].maxSupplySpecialEdition)
+        if (albums[id].TimesBought >= albums[id].MaxSupplySpecialEdition)
             revert();
 
         isBoughtByUserId[id][userId] = true;
-        albums[id].timesBought++;
-
-        return albums[id].musicIds;
+        albums[id].TimesBought++;
+        return albums[id].MusicIds;
     }
 
     function refund(
@@ -107,9 +106,9 @@ contract AlbumDB is IdUtils, Ownable {
         if (!isBoughtByUserId[id][userId]) revert();
 
         isBoughtByUserId[id][userId] = false;
-        albums[id].timesBought--;
+        albums[id].TimesBought--;
 
-        return (albums[id].musicIds, albums[id].price);
+        return (albums[id].MusicIds, albums[id].Price);
     }
 
     function change(
@@ -127,16 +126,16 @@ contract AlbumDB is IdUtils, Ownable {
         if (musicIds.length == 0) revert();
 
         albums[id] = SongMetadata({
-            title: title,
-            principalArtistId: principalArtistId,
-            metadataURI: metadataURI,
-            musicIds: musicIds,
-            price: price,
-            timesBought: albums[id].timesBought,
-            canBePurchased: canBePurchased,
-            isASpecialEdition: isASpecialEdition,
-            specialEditionName: specialEditionName,
-            maxSupplySpecialEdition: maxSupplySpecialEdition
+            Title: title,
+            PrincipalArtistId: principalArtistId,
+            MetadataURI: metadataURI,
+            MusicIds: musicIds,
+            Price: price,
+            TimesBought: albums[id].TimesBought,
+            CanBePurchased: canBePurchased,
+            IsASpecialEdition: isASpecialEdition,
+            SpecialEditionName: specialEditionName,
+            MaxSupplySpecialEdition: maxSupplySpecialEdition
         });
     }
 
@@ -144,15 +143,15 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         bool canBePurchased
     ) external onlyOwner {
-        albums[id].canBePurchased = canBePurchased;
+        albums[id].CanBePurchased = canBePurchased;
     }
 
     function changePrice(uint256 id, uint256 price) external onlyOwner {
-        albums[id].price = price;
+        albums[id].Price = price;
     }
 
     function exists(uint256 id) external view returns (bool) {
-        return bytes(albums[id].title).length != 0;
+        return bytes(albums[id].Title).length != 0;
     }
 
     function canUserBuy(
@@ -163,11 +162,11 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     function getPrice(uint256 id) external view returns (uint256) {
-        return albums[id].price;
+        return albums[id].Price;
     }
 
     function isPurschaseable(uint256 id) external view returns (bool) {
-        return albums[id].canBePurchased;
+        return albums[id].CanBePurchased;
     }
 
     function hasUserPurchasedAlbum(
@@ -178,7 +177,7 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     function getPrincipalArtistId(uint256 id) external view returns (uint256) {
-        return albums[id].principalArtistId;
+        return albums[id].PrincipalArtistId;
     }
 
     function getAlbumMetadata(
