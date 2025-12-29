@@ -60,8 +60,7 @@ contract Orchestrator is OwnableRoles {
     ) external onlyRoles(API_ROLE) {
         if (!SongDB(songDbAddress).exists(songId)) revert();
         if (!UserDB(userDbAddress).exists(userId)) revert();
-        if (!SongDB(albumDbAddress).hasUserPurchased(songId, userId))
-            revert();
+        if (!SongDB(albumDbAddress).hasUserPurchased(songId, userId)) revert();
         if (SongDB(songDbAddress).canUserBuy(songId, userId)) revert();
 
         uint256 price = SongDB(songDbAddress).getPrice(songId);
@@ -74,7 +73,7 @@ contract Orchestrator is OwnableRoles {
         UserDB(userDbAddress).deductBalance(userId, price);
         ArtistDB(artistDbAddress).addBalance(principalArtistId, price);
         SongDB(songDbAddress).purchase(songId, userId);
-        UserDB(userDbAddress).addSongIdToUser(userId, songId);
+        UserDB(userDbAddress).addSong(userId, songId);
 
         emit SongPurchased(songId, userId, price);
     }
@@ -85,8 +84,7 @@ contract Orchestrator is OwnableRoles {
     ) external onlyRoles(API_ROLE) {
         if (!AlbumDB(albumDbAddress).exists(albumId)) revert();
         if (!UserDB(userDbAddress).exists(userId)) revert();
-        if (AlbumDB(albumDbAddress).hasUserPurchased(albumId, userId))
-            revert();
+        if (AlbumDB(albumDbAddress).hasUserPurchased(albumId, userId)) revert();
         if (AlbumDB(albumDbAddress).canUserBuy(albumId, userId)) revert();
 
         uint256 price = AlbumDB(albumDbAddress).getPrice(albumId);
@@ -102,9 +100,7 @@ contract Orchestrator is OwnableRoles {
             userId
         );
 
-        for (uint256 i = 0; i < songIds.length; i++) {
-            UserDB(userDbAddress).addSongIdToUser(userId, songIds[i]);
-        }
+        UserDB(userDbAddress).addSongs(userId, songIds);
 
         emit AlbumPurchased(albumId, userId, price);
     }
@@ -131,14 +127,8 @@ contract Orchestrator is OwnableRoles {
         if (!ArtistDB(artistDbAddress).exists(artistId)) revert();
         ArtistDB(artistDbAddress).changeBasicData(artistId, name, metadataURI);
 
-        if (
-            ArtistDB(artistDbAddress).getAddress(artistId) !=
-            artistAddress
-        ) {
-            ArtistDB(artistDbAddress).changeAddress(
-                artistId,
-                artistAddress
-            );
+        if (ArtistDB(artistDbAddress).getAddress(artistId) != artistAddress) {
+            ArtistDB(artistDbAddress).changeAddress(artistId, artistAddress);
         }
     }
 
@@ -159,7 +149,7 @@ contract Orchestrator is OwnableRoles {
     ) external onlyRoles(API_ROLE) {
         if (!UserDB(userDbAddress).exists(userId)) revert();
         UserDB(userDbAddress).changeBasicData(userId, username, metadataURI);
-        
+
         if (UserDB(userDbAddress).getAddress(userId) != userAddress) {
             UserDB(userDbAddress).changeAddress(userId, userAddress);
         }
