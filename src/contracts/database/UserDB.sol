@@ -35,7 +35,7 @@ contract UserDB is IdUtils, Ownable {
     function register(
         string memory username,
         string memory metadataURI,
-        address payable userAddress
+        address userAddress
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
@@ -64,7 +64,7 @@ contract UserDB is IdUtils, Ownable {
         users[id].metadataURI = metadataURI;
     }
 
-    function changeUserAddress(
+    function changeAddress(
         uint256 id,
         address newUserAddress
     ) external onlyOwner {
@@ -106,7 +106,7 @@ contract UserDB is IdUtils, Ownable {
         users[userId].balance -= amount;
     }
 
-    function getUser(uint256 id) external view returns (User memory) {
+    function getMetadata(uint256 id) external view returns (User memory) {
         return users[id];
     }
 
@@ -122,11 +122,11 @@ contract UserDB is IdUtils, Ownable {
             users[id].userAddress != address(0);
     }
 
-    function getUserAddress(uint256 id) external view returns (address) {
+    function getAddress(uint256 id) external view returns (address) {
         return users[id].userAddress;
     }
 
-    function getUserId(address userAddress) external view returns (uint256) {
+    function getId(address userAddress) external view returns (uint256) {
         return addressUser[userAddress];
     }
 

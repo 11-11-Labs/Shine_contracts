@@ -32,23 +32,23 @@ contract AlbumDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1");
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).Title,
+            albumDB.getMetadata(assignedId).Title,
             "Album Title",
             "Album title should match"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).PrincipalArtistId,
+            albumDB.getMetadata(assignedId).PrincipalArtistId,
             1,
             "Principal artist ID should match"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).MetadataURI,
+            albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match"
         );
         assertEq(
             listOfSongIDs,
-            albumDB.getAlbumMetadata(assignedId).MusicIds,
+            albumDB.getMetadata(assignedId).MusicIds,
             "Song IDs should match"
         );
         assertTrue(
@@ -56,21 +56,21 @@ contract AlbumDB_test_unit_correct is Constants {
             "Album should be purchasable"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).Price,
+            albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should match"
         );
         assertFalse(
-            albumDB.getAlbumMetadata(assignedId).IsASpecialEdition,
+            albumDB.getMetadata(assignedId).IsASpecialEdition,
             "Should not be a special edition"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).SpecialEditionName,
+            albumDB.getMetadata(assignedId).SpecialEditionName,
             "",
             "Special edition name should be empty"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).MaxSupplySpecialEdition,
+            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             0,
             "Max supply for special edition should be 0"
         );
@@ -103,7 +103,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "Purchased song IDs should match the registered ones"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).TimesBought,
+            albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
         );
@@ -140,7 +140,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "Purchased song IDs should match the registered ones"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).TimesBought,
+            albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
         );
@@ -169,7 +169,7 @@ contract AlbumDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).TimesBought,
+            albumDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should be decremented to 0"
         );
@@ -213,23 +213,23 @@ contract AlbumDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).Title,
+            albumDB.getMetadata(assignedId).Title,
             "New Album Title",
             "Album title should be updated"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).PrincipalArtistId,
+            albumDB.getMetadata(assignedId).PrincipalArtistId,
             2,
             "Principal artist ID should be updated"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).MetadataURI,
+            albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated"
         );
         assertEq(
             listOfSongIDsAfter,
-            albumDB.getAlbumMetadata(assignedId).MusicIds,
+            albumDB.getMetadata(assignedId).MusicIds,
             "Song IDs should be updated"
         );
         assertTrue(
@@ -237,21 +237,21 @@ contract AlbumDB_test_unit_correct is Constants {
             "Album should be purchasable"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).Price,
+            albumDB.getMetadata(assignedId).Price,
             2000,
             "Price should be updated"
         );
         assertTrue(
-            albumDB.getAlbumMetadata(assignedId).IsASpecialEdition,
+            albumDB.getMetadata(assignedId).IsASpecialEdition,
             "Should be a special edition"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).SpecialEditionName,
+            albumDB.getMetadata(assignedId).SpecialEditionName,
             "Special Ultra Turbo Deluxe Edition Remaster Battle Royale with Banjo-Kazooie & Nnuckles NEW Funky Mode (Featuring Dante from Devil May Cry Series)",
             "Special edition name should be updated"
         );
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).MaxSupplySpecialEdition,
+            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             67,
             "Max supply for special edition should be updated"
         );
@@ -304,7 +304,7 @@ contract AlbumDB_test_unit_correct is Constants {
         albumDB.changePrice(assignedId, 67);
         vm.stopPrank();
         assertEq(
-            albumDB.getAlbumMetadata(assignedId).Price,
+            albumDB.getMetadata(assignedId).Price,
             67,
             "Price should be updated"
         );

@@ -29,31 +29,31 @@ contract SongDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1 for the first song");
         assertEq(
-            songDB.getSongMetadata(assignedId).title,
+            songDB.getMetadata(assignedId).title,
             "Song Title",
             "Song title should match the registered title"
         );
         assertEq(
             artistIDs,
-            songDB.getSongMetadata(assignedId).artistIDs,
+            songDB.getMetadata(assignedId).artistIDs,
             "Artist IDs should match the registered artist IDs"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).mediaURI,
+            songDB.getMetadata(assignedId).mediaURI,
             "ipfs://mediaURI",
             "Media URI should match the registered URI"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).metadataURI,
+            songDB.getMetadata(assignedId).metadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match the registered URI"
         );
         assertTrue(
-            songDB.getSongMetadata(assignedId).canBePurchased,
+            songDB.getMetadata(assignedId).canBePurchased,
             "Song should be purchasable"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).price,
+            songDB.getMetadata(assignedId).price,
             500,
             "Price should match the registered price"
         );
@@ -90,31 +90,31 @@ contract SongDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            songDB.getSongMetadata(assignedId).title,
+            songDB.getMetadata(assignedId).title,
             "New Song Title",
             "Song title should be updated to the new title"
         );
         assertEq(
             artistIDsAfter,
-            songDB.getSongMetadata(assignedId).artistIDs,
+            songDB.getMetadata(assignedId).artistIDs,
             "Artist IDs should be updated to the new artist IDs"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).mediaURI,
+            songDB.getMetadata(assignedId).mediaURI,
             "ipfs://newMediaURI",
             "Media URI should be updated to the new URI"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).metadataURI,
+            songDB.getMetadata(assignedId).metadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated to the new URI"
         );
         assertFalse(
-            songDB.getSongMetadata(assignedId).canBePurchased,
+            songDB.getMetadata(assignedId).canBePurchased,
             "Song should not be purchasable after update"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).price,
+            songDB.getMetadata(assignedId).price,
             1000,
             "Price should be updated to the new price"
         );
@@ -142,7 +142,7 @@ contract SongDB_test_unit_correct is Constants {
             "Song should be marked as bought by user ID 10"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).timesBought,
+            songDB.getMetadata(assignedId).timesBought,
             1,
             "Times bought should be incremented to 1"
         );
@@ -171,7 +171,7 @@ contract SongDB_test_unit_correct is Constants {
             "Song should not be marked as bought by user ID 10 after refund"
         );
         assertEq(
-            songDB.getSongMetadata(assignedId).timesBought,
+            songDB.getMetadata(assignedId).timesBought,
             0,
             "Times bought should be decremented to 0 after refund"
         );
@@ -195,7 +195,7 @@ contract SongDB_test_unit_correct is Constants {
         songDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
         assertFalse(
-            songDB.getSongMetadata(assignedId).canBePurchased,
+            songDB.getMetadata(assignedId).canBePurchased,
             "Song purchaseability should be updated to false"
         );
     }
@@ -218,7 +218,7 @@ contract SongDB_test_unit_correct is Constants {
         songDB.changePrice(assignedId, 1000);
         vm.stopPrank();
         assertEq(
-            songDB.getSongMetadata(assignedId).price,
+            songDB.getMetadata(assignedId).price,
             1000,
             "Song price should be updated to 1000"
         );

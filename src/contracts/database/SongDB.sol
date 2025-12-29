@@ -134,7 +134,7 @@ contract SongDB is IdUtils, Ownable {
         return isBoughtByUserId[id][userId];
     }
 
-    function hasUserPurchasedSong(
+    function hasUserPurchased(
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
@@ -153,7 +153,7 @@ contract SongDB is IdUtils, Ownable {
         return songs[id].canBePurchased;
     }
 
-    function getSongMetadata(
+    function getMetadata(
         uint256 id
     ) external view returns (SongMetadata memory) {
         return songs[id];

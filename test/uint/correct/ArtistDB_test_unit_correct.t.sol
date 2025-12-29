@@ -21,27 +21,27 @@ contract ArtistDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1 for the first artist");
         assertEq(
-            artistDB.getArtist(assignedId).Name,
+            artistDB.getMetadata(assignedId).Name,
             "Artist Name",
             "Artist name should match the registered name"
         );
         assertEq(
-            artistDB.getArtist(assignedId).MetadataURI,
+            artistDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match the registered URI"
         );
         assertEq(
-            artistDB.getArtist(assignedId).Address,
+            artistDB.getMetadata(assignedId).Address,
             ARTIST.Address,
             "Artist address should match the registered address"
         );
         assertEq(
-            artistDB.getArtist(assignedId).Balance,
+            artistDB.getMetadata(assignedId).Balance,
             0,
             "Total earnings should be initialized to 0"
         );
         assertEq(
-            artistDB.getArtist(assignedId).AccumulatedRoyalties,
+            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             0,
             "Accumulated royalties should be initialized to 0"
         );
@@ -61,36 +61,36 @@ contract ArtistDB_test_unit_correct is Constants {
         );
         vm.stopPrank();
         assertEq(
-            artistDB.getArtist(assignedId).Name,
+            artistDB.getMetadata(assignedId).Name,
             "New Artist Name",
             "Artist name should be updated to the new name"
         );
         assertEq(
-            artistDB.getArtist(assignedId).MetadataURI,
+            artistDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated to the new URI"
         );
     }
 
-    function test_unit_correct_ArtistDB__changeArtistAddress() public {
+    function test_unit_correct_ArtistDB__changeAddress() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.changeArtistAddress(assignedId, address(67));
+        artistDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
 
         assertEq(
-            artistDB.getArtist(assignedId).Address,
+            artistDB.getMetadata(assignedId).Address,
             address(67),
             "Artist address should be updated to the new address"
         );
         assertEq(
-            artistDB.getArtistAddress(assignedId),
+            artistDB.getAddress(assignedId),
             address(67),
-            "getArtistAddress should return the updated address"
+            "getAddress should return the updated address"
         );
     }
 
@@ -106,7 +106,7 @@ contract ArtistDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            artistDB.getArtist(assignedId).Balance,
+            artistDB.getMetadata(assignedId).Balance,
             1000,
             "Balance should be updated correctly"
         );
@@ -124,7 +124,7 @@ contract ArtistDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            artistDB.getArtist(assignedId).Balance,
+            artistDB.getMetadata(assignedId).Balance,
             500,
             "Balance should be updated correctly"
         );
@@ -141,7 +141,7 @@ contract ArtistDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            artistDB.getArtist(assignedId).AccumulatedRoyalties,
+            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             1000,
             "Accumulated royalties should be updated correctly"
         );
@@ -159,7 +159,7 @@ contract ArtistDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            artistDB.getArtist(assignedId).AccumulatedRoyalties,
+            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             500,
             "Accumulated royalties should be updated correctly"
         );

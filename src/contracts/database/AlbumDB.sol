@@ -169,7 +169,7 @@ contract AlbumDB is IdUtils, Ownable {
         return albums[id].CanBePurchased;
     }
 
-    function hasUserPurchasedAlbum(
+    function hasUserPurchased(
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
@@ -180,7 +180,7 @@ contract AlbumDB is IdUtils, Ownable {
         return albums[id].PrincipalArtistId;
     }
 
-    function getAlbumMetadata(
+    function getMetadata(
         uint256 id
     ) external view returns (SongMetadata memory) {
         return albums[id];

@@ -63,7 +63,7 @@ contract ArtistDB is IdUtils, Ownable {
         artists[id].MetadataURI = metadataURI;
     }
 
-    function changeArtistAddress(
+    function changeAddress(
         uint256 id,
         address newArtistAddress
     ) external onlyOwner {
@@ -101,7 +101,7 @@ contract ArtistDB is IdUtils, Ownable {
         artists[artistId].AccumulatedRoyalties -= amount;
     }
 
-    function getArtist(uint256 id) external view returns (Artist memory) {
+    function getMetadata(uint256 id) external view returns (Artist memory) {
         return artists[id];
     }
 
@@ -111,11 +111,11 @@ contract ArtistDB is IdUtils, Ownable {
             artists[id].Address != address(0);
     }
 
-    function getArtistAddress(uint256 id) external view returns (address) {
+    function getAddress(uint256 id) external view returns (address) {
         return artists[id].Address;
     }
 
-    function getArtistId(
+    function getId(
         address artistAddress
     ) external view returns (uint256) {
         return addressArtist[artistAddress];
