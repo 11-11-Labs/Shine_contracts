@@ -119,18 +119,16 @@ contract UserDB is IdUtils, Ownable {
         uint256 userId,
         uint256[] calldata songIdsToDelete
     ) external onlyOwner {
-        uint256[] storage songIds = users[userId].purchasedSongIds;
-        uint256 len = songIds.length;
-        uint256 deleteLen = songIdsToDelete.length;
+        uint256[] storage arr = users[userId].purchasedSongIds;
+        uint256 len = arr.length;
+        uint256 dlen = songIdsToDelete.length;
 
-        uint256 writeIndex;
-
+        // primera pasada: contar conservados
+        uint256 keepCount;
         for (uint256 i; i < len; ) {
             bool shouldDelete;
-
-            // Verificar si el songId actual está en la lista de eliminación
-            for (uint256 j; j < deleteLen; ) {
-                if (songIds[i] == songIdsToDelete[j]) {
+            for (uint256 j; j < dlen; ) {
+                if (arr[i] == songIdsToDelete[j]) {
                     shouldDelete = true;
                     break;
                 }
@@ -138,26 +136,36 @@ contract UserDB is IdUtils, Ownable {
                     ++j;
                 }
             }
-
-            // Si no se debe eliminar, mantenerlo
-            if (!shouldDelete) {
-                if (writeIndex != i) {
-                    songIds[writeIndex] = songIds[i];
-                }
-                unchecked {
-                    ++writeIndex;
-                }
-            }
-
+            if (!shouldDelete) ++keepCount;
             unchecked {
                 ++i;
             }
         }
 
-        // Remover los elementos sobrantes al final
-        while (songIds.length > writeIndex) {
-            songIds.pop();
+        // crear array en memoria con tamaño exacto
+        uint256[] memory kept = new uint256[](keepCount);
+        uint256 idx;
+        for (uint256 i; i < len; ) {
+            bool shouldDelete;
+            for (uint256 j; j < dlen; ) {
+                if (arr[i] == songIdsToDelete[j]) {
+                    shouldDelete = true;
+                    break;
+                }
+                unchecked {
+                    ++j;
+                }
+            }
+            if (!shouldDelete) {
+                kept[idx++] = arr[i];
+            }
+            unchecked {
+                ++i;
+            }
         }
+
+        // reasignar (copia memoria -> storage en una sola asignación)
+        users[userId].purchasedSongIds = kept;
     }
 
     function addBalance(uint256 userId, uint256 amount) external onlyOwner {
