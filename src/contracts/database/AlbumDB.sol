@@ -112,19 +112,6 @@ contract AlbumDB is IdUtils, Ownable {
         return (albums[id].musicIds, albums[id].price);
     }
 
-    function refundSpecialEdition(
-        uint256 id,
-        uint256 userId
-    ) external onlyOwner returns (uint256[] memory, uint256) {
-        if (!isBoughtByUserId[id][userId]) revert();
-
-        if (!albums[id].isASpecialEdition) revert();
-
-        isBoughtByUserId[id][userId] = false;
-        albums[id].timesBought--;
-
-        return (albums[id].musicIds, albums[id].price);
-    }
 
     function change(
         uint256 id,
@@ -178,6 +165,10 @@ contract AlbumDB is IdUtils, Ownable {
 
     function getPrice(uint256 id) external view returns (uint256) {
         return albums[id].price;
+    }
+
+    function isPurschaseable(uint256 id) external view returns (bool) {
+        return albums[id].canBePurchased;
     }
 
     function hasUserPurchasedAlbum(

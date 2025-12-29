@@ -1,8 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.8.0;
 
-abstract contract Constants {
+import {Test, console} from "forge-std/Test.sol";
+import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
+import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
+import {SongDB} from "@shine/contracts/database/SongDB.sol";
+import {UserDB} from "@shine/contracts/database/UserDB.sol";
+
+abstract contract Constants is Test {
+    AlbumDB albumDB;
+    ArtistDB artistDB;
+    SongDB songDB;
+    UserDB userDB;
+
     struct AccountData {
         address Address;
         uint256 PrivateKey;
@@ -56,11 +66,15 @@ abstract contract Constants {
             PrivateKey: 0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356
         });
 
-    AccountData ADMIN = ACCOUNT1;
-    AccountData CREATOR1 = ACCOUNT2;
-    AccountData CREATOR2 = ACCOUNT3;
-    AccountData CREATOR3 = ACCOUNT4;
-    AccountData USER1 = ACCOUNT5;
-    AccountData USER2 = ACCOUNT6;
-    AccountData PROPOSED_ADMIN = ACCOUNT7;
+    AccountData FAKE_ORCHESTRATOR = ACCOUNT1;
+    AccountData ADMIN = ACCOUNT2;
+    AccountData API = ACCOUNT3;
+    AccountData USER = ACCOUNT4;
+    AccountData ARTIST = ACCOUNT5;
+
+    function setUp() public {
+        executeBeforeSetUp();
+    }
+
+    function executeBeforeSetUp() internal virtual {}
 }
