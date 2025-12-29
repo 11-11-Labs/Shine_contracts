@@ -44,8 +44,6 @@ contract Orchestrator is OwnableRoles {
         uint256 price
     );
 
-    mapping(uint256 userId => uint256 balance) private userBalance;
-    mapping(uint256 artistId => uint256 balance) private artistBalance;
     constructor(
         address initialOwner,
         address initialAdminAddress,
@@ -67,14 +65,14 @@ contract Orchestrator is OwnableRoles {
         if (SongDB(songDbAddress).canUserBuy(songId, userId)) revert();
 
         uint256 price = SongDB(songDbAddress).getPrice(songId);
-        if (userBalance[userId] < price) revert();
+        if (UserDB(userDbAddress).getBalance(userId) < price) revert();
 
         uint256 principalArtistId = SongDB(songDbAddress).getPrincipalArtistId(
             songId
         );
 
-        userBalance[userId] -= price;
-        artistBalance[principalArtistId] += price;
+        UserDB(userDbAddress).deductBalance(userId, price);
+        ArtistDB(artistDbAddress).addBalance(principalArtistId, price);
         SongDB(songDbAddress).purchase(songId, userId);
         UserDB(userDbAddress).addSongIdToUser(userId, songId);
 
@@ -92,13 +90,13 @@ contract Orchestrator is OwnableRoles {
         if (AlbumDB(albumDbAddress).canUserBuy(albumId, userId)) revert();
 
         uint256 price = AlbumDB(albumDbAddress).getPrice(albumId);
-        if (userBalance[userId] < price) revert();
+        if (UserDB(userDbAddress).getBalance(userId) < price) revert();
 
         uint256 principalArtistId = AlbumDB(albumDbAddress)
             .getPrincipalArtistId(albumId);
 
-        userBalance[userId] -= price;
-        artistBalance[principalArtistId] += price;
+        UserDB(userDbAddress).deductBalance(userId, price);
+        ArtistDB(artistDbAddress).addBalance(principalArtistId, price);
         uint256[] memory songIds = AlbumDB(albumDbAddress).purchase(
             albumId,
             userId

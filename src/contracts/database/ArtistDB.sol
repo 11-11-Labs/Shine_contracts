@@ -18,11 +18,11 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract ArtistDB is IdUtils, Ownable {
     struct Artist {
-        string name;
-        string metadataURI;
-        address artistAddress;
-        uint256 totalEarnings;
-        uint256 accumulatedRoyalties;
+        string Name;
+        string MetadataURI;
+        address Address;
+        uint256 Balance;
+        uint256 AccumulatedRoyalties;
     }
 
     mapping(address artistAddress => uint256 id) private addressArtist;
@@ -40,11 +40,11 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 idAssigned = _getNextId();
 
         artists[idAssigned] = Artist({
-            name: name,
-            metadataURI: metadataURI,
-            artistAddress: artistAddress,
-            totalEarnings: 0,
-            accumulatedRoyalties: 0
+            Name: name,
+            MetadataURI: metadataURI,
+            Address: artistAddress,
+            Balance: 0,
+            AccumulatedRoyalties: 0
         });
 
         return idAssigned;
@@ -55,50 +55,50 @@ contract ArtistDB is IdUtils, Ownable {
         string memory name,
         string memory metadataURI
     ) external onlyOwner {
-        if (bytes(artists[id].name).length == 0) {
+        if (bytes(artists[id].Name).length == 0) {
             revert();
         }
 
-        artists[id].name = name;
-        artists[id].metadataURI = metadataURI;
+        artists[id].Name = name;
+        artists[id].MetadataURI = metadataURI;
     }
 
     function changeArtistAddress(
         uint256 id,
         address newArtistAddress
     ) external onlyOwner {
-        if (bytes(artists[id].name).length == 0) {
+        if (bytes(artists[id].Name).length == 0) {
             revert();
         }
 
-        addressArtist[artists[id].artistAddress] = 0;
-        artists[id].artistAddress = newArtistAddress;
+        addressArtist[artists[id].Address] = 0;
+        artists[id].Address = newArtistAddress;
         addressArtist[newArtistAddress] = id;
     }
 
-    function addEarnings(uint256 artistId, uint256 amount) external onlyOwner {
-        artists[artistId].totalEarnings += amount;
+    function addBalance(uint256 artistId, uint256 amount) external onlyOwner {
+        artists[artistId].Balance += amount;
     }
 
-    function deductEarnings(
+    function deductBalance(
         uint256 artistId,
         uint256 amount
     ) external onlyOwner {
-        artists[artistId].totalEarnings -= amount;
+        artists[artistId].Balance -= amount;
     }
 
     function addAccumulatedRoyalties(
         uint256 artistId,
         uint256 amount
     ) external onlyOwner {
-        artists[artistId].accumulatedRoyalties += amount;
+        artists[artistId].AccumulatedRoyalties += amount;
     }
 
     function deductAccumulatedRoyalties(
         uint256 artistId,
         uint256 amount
     ) external onlyOwner {
-        artists[artistId].accumulatedRoyalties -= amount;
+        artists[artistId].AccumulatedRoyalties -= amount;
     }
 
     function getArtist(uint256 id) external view returns (Artist memory) {
@@ -107,17 +107,21 @@ contract ArtistDB is IdUtils, Ownable {
 
     function exists(uint256 id) external view returns (bool) {
         return
-            bytes(artists[id].name).length != 0 &&
-            artists[id].artistAddress != address(0);
+            bytes(artists[id].Name).length != 0 &&
+            artists[id].Address != address(0);
     }
 
     function getArtistAddress(uint256 id) external view returns (address) {
-        return artists[id].artistAddress;
+        return artists[id].Address;
     }
 
     function getArtistId(
         address artistAddress
     ) external view returns (uint256) {
         return addressArtist[artistAddress];
+    }
+
+    function getBalance(uint256 artistId) external view returns (uint256) {
+        return artists[artistId].Balance;
     }
 }

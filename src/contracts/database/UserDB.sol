@@ -22,6 +22,7 @@ contract UserDB is IdUtils, Ownable {
         string metadataURI;
         address userAddress;
         uint256[] purchasedSongIds;
+        uint256 balance;
     }
 
     mapping(address userAddress => uint256 id) private addressUser;
@@ -42,7 +43,8 @@ contract UserDB is IdUtils, Ownable {
             username: username,
             metadataURI: metadataURI,
             userAddress: userAddress,
-            purchasedSongIds: new uint256[](0)
+            purchasedSongIds: new uint256[](0),
+            balance: 0
         });
 
         addressUser[userAddress] = idAssigned;
@@ -96,6 +98,14 @@ contract UserDB is IdUtils, Ownable {
         }
     }
 
+    function addBalance(uint256 userId, uint256 amount) external onlyOwner {
+        users[userId].balance += amount;
+    }
+
+    function deductBalance(uint256 userId, uint256 amount) external onlyOwner {
+        users[userId].balance -= amount;
+    }
+
     function getUser(uint256 id) external view returns (User memory) {
         return users[id];
     }
@@ -118,5 +128,9 @@ contract UserDB is IdUtils, Ownable {
 
     function getUserId(address userAddress) external view returns (uint256) {
         return addressUser[userAddress];
+    }
+
+    function getBalance(uint256 userId) external view returns (uint256) {
+        return users[userId].balance;
     }
 }
