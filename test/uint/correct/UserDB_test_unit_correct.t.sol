@@ -99,4 +99,65 @@ contract UserDB_test_unit_correct is Constants {
             "Old address should no longer map to any user ID"
         );
     }
+
+    function test_unit_correct_UserDB__addSong() public {
+        uint256[] memory songs = new uint256[](1);
+        songs[0] = 101;
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addSong(assignedId, 101);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB
+            .getPurchasedSong(assignedId);
+
+        assertEq(
+            purchasedSongs,
+            songs,
+            "Purchased song IDs array should have one entry"
+        );
+    }
+
+
+    function test_unit_correct_UserDB__deleteSong() public {
+        uint256[] memory songsBefore = new uint256[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            songsBefore[i] = i + 100;
+        }
+        uint256[] memory songsAfter = new uint256[](9);
+        songsAfter[0] = 100;
+        songsAfter[1] = 101;
+        songsAfter[2] = 102;
+        songsAfter[3] = 103;
+        songsAfter[4] = 105;
+        songsAfter[5] = 106;
+        songsAfter[6] = 107;
+        songsAfter[7] = 108;
+        songsAfter[8] = 109;
+        
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addSongs(assignedId, songsBefore);
+        userDB.deleteSong(assignedId, 104);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB
+            .getPurchasedSong(assignedId);
+
+        assertEq(
+            purchasedSongs,
+            songsAfter,
+            "Purchased song IDs array should have the correct entries after removal"
+        );
+    }
+
+
 }
