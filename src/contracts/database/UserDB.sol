@@ -77,23 +77,68 @@ contract UserDB is IdUtils, Ownable {
         addressUser[newUserAddress] = id;
     }
 
-    function addSongIdToUser(
+    function addSong(
         uint256 userId,
         uint256 songId
     ) external onlyOwner {
         users[userId].purchasedSongIds.push(songId);
     }
 
-    function deleteSongIdFromUser(
+    function removeSong(
         uint256 userId,
         uint256 songId
     ) external onlyOwner {
         uint256[] storage songIds = users[userId].purchasedSongIds;
-        for (uint256 i = 0; i < songIds.length; i++) {
+        uint256 len = songIds.length;
+
+        for (uint256 i; i < len; ) {
             if (songIds[i] == songId) {
-                songIds[i] = songIds[songIds.length - 1];
+                songIds[i] = songIds[len - 1];
                 songIds.pop();
                 break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function addSongs(
+        uint256 userId,
+        uint256[] calldata songIds
+    ) external onlyOwner {
+        uint256 len = songIds.length;
+        for (uint256 i; i < len; ) {
+            users[userId].purchasedSongIds.push(songIds[i]);
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function deleteSongs(
+        uint256 userId,
+        uint256[] calldata songIdsToDelete
+    ) external onlyOwner {
+        uint256[] storage songIds = users[userId].purchasedSongIds;
+        uint256 deleteLen = songIdsToDelete.length;
+
+        for (uint256 j; j < deleteLen; ) {
+            uint256 targetId = songIdsToDelete[j];
+            uint256 len = songIds.length;
+
+            for (uint256 i; i < len; ) {
+                if (songIds[i] == targetId) {
+                    songIds[i] = songIds[len - 1];
+                    songIds.pop();
+                    break;
+                }
+                unchecked {
+                    ++i;
+                }
+            }
+            unchecked {
+                ++j;
             }
         }
     }
