@@ -112,7 +112,6 @@ contract AlbumDB is IdUtils, Ownable {
         return (albums[id].musicIds, albums[id].price);
     }
 
-
     function change(
         uint256 id,
         string memory title,
@@ -187,6 +186,4 @@ contract AlbumDB is IdUtils, Ownable {
     ) external view returns (SongMetadata memory) {
         return albums[id];
     }
-
-    
 }
