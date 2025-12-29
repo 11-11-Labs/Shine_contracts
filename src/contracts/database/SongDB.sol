@@ -29,7 +29,8 @@ contract SongDB is IdUtils, Ownable {
         uint256 timesBought;
     }
 
-    mapping(uint256 Id => mapping(uint256 userId => bool)) isBoughtByUserId;
+    mapping(uint256 Id => mapping(uint256 userId => bool))
+        private isBoughtByUserId;
     mapping(uint256 Id => SongMetadata) private songs;
 
     constructor(address _orchestratorAddress) {
@@ -61,32 +62,6 @@ contract SongDB is IdUtils, Ownable {
         return idAssigned;
     }
 
-    function purchase(
-        uint256 id,
-        uint256 userId
-    ) external onlyOwner returns (bool) {
-        if (!songs[id].canBePurchased) revert();
-        if (isBoughtByUserId[id][userId]) revert();
-
-        isBoughtByUserId[id][userId] = true;
-        songs[id].timesBought++;
-
-        return true;
-    }
-
-    function refund(
-        uint256 id,
-        uint256 userId
-    ) external onlyOwner returns (bool) {
-        if (!songs[id].canBePurchased) revert();
-        if (!isBoughtByUserId[id][userId]) revert();
-
-        isBoughtByUserId[id][userId] = false;
-        songs[id].timesBought--;
-
-        return true;
-    }
-
     function change(
         uint256 id,
         string memory title,
@@ -109,6 +84,27 @@ contract SongDB is IdUtils, Ownable {
         });
     }
 
+    function purchase(uint256 id, uint256 userId) external onlyOwner {
+        if (!songs[id].canBePurchased) revert();
+        if (isBoughtByUserId[id][userId]) revert();
+
+        isBoughtByUserId[id][userId] = true;
+        songs[id].timesBought++;
+    }
+
+    function refund(
+        uint256 id,
+        uint256 userId
+    ) external onlyOwner returns (bool) {
+        if (!songs[id].canBePurchased) revert();
+        if (!isBoughtByUserId[id][userId]) revert();
+
+        isBoughtByUserId[id][userId] = false;
+        songs[id].timesBought--;
+
+        return true;
+    }
+
     function changePurchaseability(
         uint256 id,
         bool canBePurchased
@@ -122,6 +118,13 @@ contract SongDB is IdUtils, Ownable {
 
     function exists(uint256 id) external view returns (bool) {
         return bytes(songs[id].title).length != 0;
+    }
+
+    function isBoughtByUser(
+        uint256 id,
+        uint256 userId
+    ) external view returns (bool) {
+        return isBoughtByUserId[id][userId];
     }
 
     function canUserBuy(
@@ -144,6 +147,10 @@ contract SongDB is IdUtils, Ownable {
 
     function getPrincipalArtistId(uint256 id) external view returns (uint256) {
         return songs[id].principalArtistId;
+    }
+
+    function isPurschaseable(uint256 id) external view returns (bool) {
+        return songs[id].canBePurchased;
     }
 
     function getSongMetadata(
