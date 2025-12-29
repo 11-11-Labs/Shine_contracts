@@ -160,4 +160,109 @@ contract UserDB_test_unit_correct is Constants {
     }
 
 
+    function test_unit_correct_UserDB__addSongs() public {
+        uint256[] memory songsBefore = new uint256[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            songsBefore[i] = i + 100;
+        }
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addSongs(assignedId, songsBefore);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB
+            .getPurchasedSong(assignedId);
+
+        assertEq(
+            purchasedSongs,
+            songsBefore,
+            "Purchased song IDs array should have all added entries"
+        );
+    }
+
+    function test_unit_correct_UserDB__deleteSongs() public {
+        uint256[] memory songsBefore = new uint256[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            songsBefore[i] = i + 100;
+        }
+        uint256[] memory songsAfter = new uint256[](8);
+        songsAfter[0] = 100;
+        songsAfter[1] = 101;
+        songsAfter[2] = 102;
+        songsAfter[3] = 103;
+        songsAfter[4] = 105;
+        songsAfter[5] = 106;
+        songsAfter[6] = 107;
+        songsAfter[7] = 109;
+
+        uint256[] memory songsToDelete = new uint256[](2);
+        songsToDelete[0] = 104;
+        songsToDelete[1] = 108;
+        
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addSongs(assignedId, songsBefore);
+        userDB.deleteSongs(assignedId, songsToDelete);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB
+            .getPurchasedSong(assignedId);
+
+        assertEq(
+            purchasedSongs,
+            songsAfter,
+            "Purchased song IDs array should have the correct entries after removal"
+        );
+    }
+
+    function test_unit_correct_UserDB__addBalance() public {
+        uint256[] memory songs = new uint256[](1);
+        songs[0] = 101;
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addBalance(assignedId, 100);
+        vm.stopPrank();
+
+        assertEq(
+            userDB.getBalance(assignedId),
+            100,
+            "Balance should be updated correctly"
+        );
+    }
+
+    function test_unit_correct_UserDB__deductBalance() public {
+        uint256[] memory songs = new uint256[](1);
+        songs[0] = 101;
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addBalance(assignedId, 100);
+        userDB.deductBalance(assignedId, 50);
+        vm.stopPrank();
+
+        assertEq(
+            userDB.getBalance(assignedId),
+            50,
+            "Balance should be updated correctly"
+        );
+    }
+
+
+
+
 }
