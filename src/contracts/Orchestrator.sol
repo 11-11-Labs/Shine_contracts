@@ -94,9 +94,8 @@ contract Orchestrator is OwnableRoles {
         uint256 price = AlbumDB(albumDbAddress).getPrice(albumId);
         if (userBalance[userId] < price) revert();
 
-        uint256 principalArtistId = AlbumDB(albumDbAddress).getPrincipalArtistId(
-            albumId
-        );
+        uint256 principalArtistId = AlbumDB(albumDbAddress)
+            .getPrincipalArtistId(albumId);
 
         userBalance[userId] -= price;
         artistBalance[principalArtistId] += price;
@@ -132,12 +131,17 @@ contract Orchestrator is OwnableRoles {
         address payable artistAddress
     ) external onlyRoles(API_ROLE) {
         if (!ArtistDB(artistDbAddress).exists(artistId)) revert();
-        ArtistDB(artistDbAddress).change(
-            artistId,
-            name,
-            metadataURI,
+        ArtistDB(artistDbAddress).changeBasicData(artistId, name, metadataURI);
+
+        if (
+            ArtistDB(artistDbAddress).getArtistAddress(artistId) !=
             artistAddress
-        );
+        ) {
+            ArtistDB(artistDbAddress).changeArtistAddress(
+                artistId,
+                artistAddress
+            );
+        }
     }
 
     function registerUser(
@@ -156,12 +160,11 @@ contract Orchestrator is OwnableRoles {
         address payable userAddress
     ) external onlyRoles(API_ROLE) {
         if (!UserDB(userDbAddress).exists(userId)) revert();
-        UserDB(userDbAddress).change(
-            userId,
-            username,
-            metadataURI,
-            userAddress
-        );
+        UserDB(userDbAddress).changeBasicData(userId, username, metadataURI);
+        
+        if (UserDB(userDbAddress).getUserAddress(userId) != userAddress) {
+            UserDB(userDbAddress).changeUserAddress(userId, userAddress);
+        }
     }
 
     function registerSong(
