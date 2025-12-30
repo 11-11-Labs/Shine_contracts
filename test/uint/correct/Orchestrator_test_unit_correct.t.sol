@@ -350,4 +350,48 @@ contract Orchestrator_test_unit_correct is Constants {
             "Price should be updated to the new price"
         );
     }
+
+
+    function test_unit_correct_Orchestrator__changePurchaseabilityAndPriceOfSong() public {
+        vm.startPrank(API.Address);
+
+        /*uint256 userId =*/ orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            false,
+            180
+        );
+        orchestrator.changePurchaseabilityAndPriceOfSong(
+            songId,
+            artistId,
+            true,
+            250
+        );
+
+        vm.stopPrank();
+
+        assertTrue(
+            songDB.getMetadata(songId).canBePurchased,
+            "Song should be purchasable after update"
+        );
+        assertEq(
+            songDB.getMetadata(songId).price,
+            250,
+            "Price should be updated to the new price"
+        );
+    }
 }

@@ -169,10 +169,12 @@ contract Orchestrator is OwnableRoles {
 
     function changePurchaseabilityAndPriceOfSong(
         uint256 songId,
+        uint256 artistId,
         bool canBePurchased,
         uint256 price
     ) external onlyRoles(API_ROLE) {
         if (!SongDB(dbAddress.song).exists(songId)) revert();
+        if (SongDB(dbAddress.song).getPrincipalArtistId(songId) != artistId) revert();
 
         SongDB(dbAddress.song).changePurchaseability(songId, canBePurchased);
         SongDB(dbAddress.song).changePrice(songId, price);
