@@ -351,8 +351,9 @@ contract Orchestrator_test_unit_correct is Constants {
         );
     }
 
-
-    function test_unit_correct_Orchestrator__changePurchaseabilityAndPriceOfSong() public {
+    function test_unit_correct_Orchestrator__changePurchaseabilityAndPriceOfSong()
+        public
+    {
         vm.startPrank(API.Address);
 
         /*uint256 userId =*/ orchestrator.registerUser(
@@ -393,5 +394,193 @@ contract Orchestrator_test_unit_correct is Constants {
             250,
             "Price should be updated to the new price"
         );
+    }
+
+    function test_unit_correct_Orchestrator__registerAlbum() public {
+        vm.startPrank(API.Address);
+
+        /*uint256 userId =*/ orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            false,
+            180
+        );
+
+        uint256[] memory songIDs = new uint256[](1);
+        songIDs[0] = songId;
+
+        uint256 albumId = orchestrator.registerAlbum(
+            artistId,
+            "Album Title",
+            "ipfs://albumMetadataURI",
+            songIDs,
+            500,
+            true,
+            false,
+            "",
+            0
+        );
+
+        vm.stopPrank();
+
+        assertEq(albumId, 1, "Assigned ID should be 1 for the first album");
+        assertEq(
+            albumDB.getMetadata(albumId).Title,
+            "Album Title",
+            "Album title should match the registered title"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).PrincipalArtistId,
+            artistId,
+            "Principal artist ID should match the registered artist ID"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).MetadataURI,
+            "ipfs://albumMetadataURI",
+            "Metadata URI should match the registered URI"
+        );
+        assertEq(
+            songIDs,
+            albumDB.getMetadata(albumId).MusicIds,
+            "Song IDs should match the registered song IDs"
+        );
+        assertTrue(
+            albumDB.isPurschaseable(albumId),
+            "Album should be purchasable"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).Price,
+            500,
+            "Price should match the registered price"
+        );
+        assertFalse(
+            albumDB.getMetadata(albumId).IsASpecialEdition,
+            "Should not be a special edition"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).SpecialEditionName,
+            "",
+            "Special edition name should be empty"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).MaxSupplySpecialEdition,
+            0,
+            "Max supply for special edition should be 0"
+        );
+    }
+
+
+    function test_unit_correct_Orchestrator__changeDataOfAlbum() public {
+        vm.startPrank(API.Address);
+
+        /*uint256 userId =*/ orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            false,
+            180
+        );
+
+        uint256[] memory songIDs = new uint256[](1);
+        songIDs[0] = songId;
+
+        uint256 albumId = orchestrator.registerAlbum(
+            artistId,
+            "Album Title",
+            "ipfs://albumMetadataURI",
+            songIDs,
+            500,
+            true,
+            false,
+            "",
+            0
+        );
+
+        orchestrator.changeDataOfAlbum(
+            albumId,
+            "New Album Title",
+            artistId,
+            "ipfs://newAlbumMetadataURI",
+            songIDs,
+            1000,
+            false,
+            true,
+            "Special Edition Name",
+            50
+        );
+
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(albumId).Title,
+            "New Album Title",
+            "Album title should be updated to the new title"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).PrincipalArtistId,
+            artistId,
+            "Principal artist ID should remain unchanged"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).MetadataURI,
+            "ipfs://newAlbumMetadataURI",
+            "Metadata URI should be updated to the new URI"
+        );
+        assertEq(
+            songIDs,
+            albumDB.getMetadata(albumId).MusicIds,
+            "Song IDs should remain unchanged"
+        );
+        assertFalse(
+            albumDB.isPurschaseable(albumId),
+            "Album should not be purchasable after update"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).Price,
+            1000,
+            "Price should be updated to the new price"
+        );
+        assertTrue(
+            albumDB.getMetadata(albumId).IsASpecialEdition,
+            "Should be a special edition after update"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).SpecialEditionName,
+            "Special Edition Name",
+            "Special edition name should be updated"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).MaxSupplySpecialEdition,
+            50,
+            "Max supply for special edition should be updated"
+        );
+
     }
 }

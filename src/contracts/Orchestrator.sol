@@ -225,7 +225,7 @@ contract Orchestrator is OwnableRoles {
         if (!AlbumDB(dbAddress.album).exists(albumId)) revert();
 
         if (
-            AlbumDB(dbAddress.artist).getPrincipalArtistId(principalArtistId) !=
+            AlbumDB(dbAddress.album).getPrincipalArtistId(principalArtistId) !=
             principalArtistId
         ) revert();
 
