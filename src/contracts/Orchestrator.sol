@@ -151,7 +151,7 @@ contract Orchestrator is OwnableRoles {
     ) external onlyRoles(API_ROLE) {
         if (!SongDB(dbAddress.song).exists(songId)) revert();
         if (
-            SongDB(dbAddress.artist).getPrincipalArtistId(principalArtistId) !=
+            SongDB(dbAddress.song).getPrincipalArtistId(songId) !=
             principalArtistId
         ) revert();
 

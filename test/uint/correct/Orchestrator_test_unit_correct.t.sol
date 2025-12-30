@@ -226,7 +226,7 @@ contract Orchestrator_test_unit_correct is Constants {
     function test_unit_correct_Orchestrator__registerSong() public {
         vm.startPrank(API.Address);
 
-        uint256 userId = orchestrator.registerUser(
+        /*uint256 userId =*/ orchestrator.registerUser(
             "Username",
             "ipfs://metadataURI",
             USER.Address
@@ -278,6 +278,76 @@ contract Orchestrator_test_unit_correct is Constants {
             songDB.getMetadata(songId).price,
             180,
             "Price should match the registered price"
+        );
+    }
+
+    function test_unit_correct_Orchestrator__changeDataOfSong() public {
+        vm.startPrank(API.Address);
+
+        /*uint256 userId =*/ orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            false,
+            180
+        );
+        uint256[] memory artistIDsNew = new uint256[](2);
+        artistIDsNew[0] = 67;
+        artistIDsNew[1] = 777;
+        orchestrator.changeDataOfSong(
+            songId,
+            "New Song Title",
+            artistId,
+            artistIDsNew,
+            "ipfs://newSongMediaURI",
+            "ipfs://newSongMetadataURI",
+            true,
+            250
+        );
+
+        vm.stopPrank();
+
+        assertEq(
+            songDB.getMetadata(songId).title,
+            "New Song Title",
+            "Song title should be updated to the new title"
+        );
+        assertEq(
+            artistIDsNew,
+            songDB.getMetadata(songId).artistIDs,
+            "Artist IDs should be updated to the new artist IDs"
+        );
+        assertEq(
+            songDB.getMetadata(songId).mediaURI,
+            "ipfs://newSongMediaURI",
+            "Media URI should be updated to the new URI"
+        );
+        assertEq(
+            songDB.getMetadata(songId).metadataURI,
+            "ipfs://newSongMetadataURI",
+            "Metadata URI should be updated to the new URI"
+        );
+        assertTrue(
+            songDB.getMetadata(songId).canBePurchased,
+            "Song should be purchasable after update"
+        );
+        assertEq(
+            songDB.getMetadata(songId).price,
+            250,
+            "Price should be updated to the new price"
         );
     }
 }
