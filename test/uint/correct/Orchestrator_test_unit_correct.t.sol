@@ -582,8 +582,9 @@ contract Orchestrator_test_unit_correct is Constants {
         );
     }
 
-
-    function test_unit_correct_Orchestrator__changePurchaseabilityAndPriceOfAlbum() public {
+    function test_unit_correct_Orchestrator__changePurchaseabilityAndPriceOfAlbum()
+        public
+    {
         vm.startPrank(API.Address);
 
         /*uint256 userId =*/ orchestrator.registerUser(
@@ -640,7 +641,126 @@ contract Orchestrator_test_unit_correct is Constants {
             1000,
             "Price should be updated to the new price"
         );
+    }
 
+    function test_unit_correct_Orchestrator__buySong() public {
+        vm.startPrank(API.Address);
 
+        uint256 userId = orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+
+        orchestrator.addBalanceToUser(userId, 1000);
+
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            true,
+            1000
+        );
+
+        orchestrator.buySong(userId, songId);
+
+        vm.stopPrank();
+
+        assertTrue(
+            songDB.hasUserPurchased(songId, userId),
+            "User should have purchased the song"
+        );
+        assertEq(
+            userDB.getMetadata(userId).balance,
+            0,
+            "User balance should be deducted by the song price"
+        );
+        assertEq(
+            artistDB.getMetadata(artistId).Balance,
+            1000,
+            "Artist balance should be increased by the song price"
+        );
+        uint256[] memory purchasedSongs = new uint256[](1);
+        purchasedSongs[0] = songId;
+        assertEq(
+            userDB.getMetadata(userId).purchasedSongIds,
+            purchasedSongs,
+            "Song ID should be added to the user's purchased songs"
+        );
+    }
+
+    function test_unit_correct_Orchestrator__buyAlbum() public {
+        vm.startPrank(API.Address);
+
+        uint256 userId = orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            false,
+            180
+        );
+
+        uint256[] memory songIDs = new uint256[](1);
+        songIDs[0] = songId;
+
+        uint256 albumId = orchestrator.registerAlbum(
+            artistId,
+            "Album Title",
+            "ipfs://albumMetadataURI",
+            songIDs,
+            500,
+            true,
+            false,
+            "",
+            0
+        );
+
+        orchestrator.addBalanceToUser(userId, 1000);
+        orchestrator.buyAlbum(userId, albumId);
+
+        vm.stopPrank();
+
+        assertTrue(
+            albumDB.hasUserPurchased(albumId, userId),
+            "User should have purchased the album"
+        );
+        assertEq(
+            userDB.getMetadata(userId).balance,
+            500,
+            "User balance should be deducted by the album price"
+        );
+        assertEq(
+            artistDB.getMetadata(artistId).Balance,
+            500,
+            "Artist balance should be increased by the album price"
+        );
+        uint256[] memory purchasedSongs = new uint256[](1);
+        purchasedSongs[0] = songId;
+        assertEq(
+            userDB.getMetadata(userId).purchasedSongIds,
+            purchasedSongs,
+            "All song IDs from the album should be added to the user's purchased songs"
+        );
     }
 }

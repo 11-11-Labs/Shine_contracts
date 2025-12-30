@@ -267,7 +267,7 @@ contract Orchestrator is OwnableRoles {
     ) external onlyRoles(API_ROLE) {
         if (!SongDB(dbAddress.song).exists(songId)) revert();
         if (!UserDB(dbAddress.user).exists(userId)) revert();
-        if (!SongDB(dbAddress.album).hasUserPurchased(songId, userId)) revert();
+        if (SongDB(dbAddress.song).hasUserPurchased(songId, userId)) revert();
         if (SongDB(dbAddress.song).canUserBuy(songId, userId)) revert();
 
         uint256 price = SongDB(dbAddress.song).getPrice(songId);
@@ -308,6 +308,38 @@ contract Orchestrator is OwnableRoles {
         UserDB(dbAddress.user).addSongs(userId, songIds);
 
         emit AlbumPurchased(albumId, userId, price);
+    }
+
+    function addBalanceToUser(
+        uint256 userId,
+        uint256 amount
+    ) external onlyRoles(API_ROLE) {
+        if (!UserDB(dbAddress.user).exists(userId)) revert();
+        UserDB(dbAddress.user).addBalance(userId, amount);
+    }
+
+    function deductBalanceFromUser(
+        uint256 userId,
+        uint256 amount
+    ) external onlyRoles(API_ROLE) {
+        if (!UserDB(dbAddress.user).exists(userId)) revert();
+        UserDB(dbAddress.user).deductBalance(userId, amount);
+    }
+
+    function addBalanceToArtist(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyRoles(API_ROLE) {
+        if (!ArtistDB(dbAddress.artist).exists(artistId)) revert();
+        ArtistDB(dbAddress.artist).addBalance(artistId, amount);
+    }
+
+    function deductBalanceFromArtist(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyRoles(API_ROLE) {
+        if (!ArtistDB(dbAddress.artist).exists(artistId)) revert();
+        ArtistDB(dbAddress.artist).deductBalance(artistId, amount);
     }
 
     function setAPIRole(
