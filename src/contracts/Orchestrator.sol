@@ -21,16 +21,20 @@ import {UserDB} from "@shine/contracts/database/UserDB.sol";
 import {OwnableRoles} from "@solady/auth/OwnableRoles.sol";
 
 contract Orchestrator is OwnableRoles {
+    struct DataBaseList {
+        address album;
+        address artist;
+        address song;
+        address user;
+    }
+
     uint256 constant ADMIN_ROLE = 1;
     uint256 constant API_ROLE = 2;
 
-    address private albumDbAddress;
-    address private artistDbAddress;
-    address private songDbAddress;
-    address private userDbAddress;
+    DataBaseList private dbAddress;
 
-    bytes1 breakerAddressSetup;
-    bytes1 breakerShop;
+    bytes16 breakerAddressSetup;
+    bytes16 breakerShop;
 
     event SongPurchased(
         uint256 indexed songId,
@@ -54,104 +58,61 @@ contract Orchestrator is OwnableRoles {
         _grantRoles(initialAPIAddress, API_ROLE);
     }
 
-    function buySong(
-        uint256 songId,
-        uint256 userId
-    ) external onlyRoles(API_ROLE) {
-        if (!SongDB(songDbAddress).exists(songId)) revert();
-        if (!UserDB(userDbAddress).exists(userId)) revert();
-        if (!SongDB(albumDbAddress).hasUserPurchased(songId, userId)) revert();
-        if (SongDB(songDbAddress).canUserBuy(songId, userId)) revert();
-
-        uint256 price = SongDB(songDbAddress).getPrice(songId);
-        if (UserDB(userDbAddress).getBalance(userId) < price) revert();
-
-        uint256 principalArtistId = SongDB(songDbAddress).getPrincipalArtistId(
-            songId
-        );
-
-        UserDB(userDbAddress).deductBalance(userId, price);
-        ArtistDB(artistDbAddress).addBalance(principalArtistId, price);
-        SongDB(songDbAddress).purchase(songId, userId);
-        UserDB(userDbAddress).addSong(userId, songId);
-
-        emit SongPurchased(songId, userId, price);
-    }
-
-    function buyAlbum(
-        uint256 albumId,
-        uint256 userId
-    ) external onlyRoles(API_ROLE) {
-        if (!AlbumDB(albumDbAddress).exists(albumId)) revert();
-        if (!UserDB(userDbAddress).exists(userId)) revert();
-        if (AlbumDB(albumDbAddress).hasUserPurchased(albumId, userId)) revert();
-        if (AlbumDB(albumDbAddress).canUserBuy(albumId, userId)) revert();
-
-        uint256 price = AlbumDB(albumDbAddress).getPrice(albumId);
-        if (UserDB(userDbAddress).getBalance(userId) < price) revert();
-
-        uint256 principalArtistId = AlbumDB(albumDbAddress)
-            .getPrincipalArtistId(albumId);
-
-        UserDB(userDbAddress).deductBalance(userId, price);
-        ArtistDB(artistDbAddress).addBalance(principalArtistId, price);
-        uint256[] memory songIds = AlbumDB(albumDbAddress).purchase(
-            albumId,
-            userId
-        );
-
-        UserDB(userDbAddress).addSongs(userId, songIds);
-
-        emit AlbumPurchased(albumId, userId, price);
+    function _setDatabaseAddresses(
+        address _dbalbum,
+        address _dbartist,
+        address _dbsong,
+        address _dbuser
+    ) external onlyOwner {
+        if (breakerAddressSetup != bytes16(0)) revert();
+        dbAddress.album = _dbalbum;
+        dbAddress.artist = _dbartist;
+        dbAddress.song = _dbsong;
+        dbAddress.user = _dbuser;
+        breakerAddressSetup = bytes16(hex"00000000000000000000000000000001");
     }
 
     function registerArtist(
         string memory name,
         string memory metadataURI,
-        address payable artistAddress
-    ) external onlyRoles(API_ROLE) returns (uint256) {
-        return
-            ArtistDB(artistDbAddress).register(
-                name,
-                metadataURI,
-                artistAddress
-            );
+        address artistAddress
+    ) external onlyRoles(API_ROLE) returns (uint256 id) {
+        id = ArtistDB(dbAddress.artist).register(name, metadataURI, artistAddress);
     }
 
     function chnageDataOfArtist(
         uint256 artistId,
         string memory name,
         string memory metadataURI,
-        address payable artistAddress
+        address artistAddress
     ) external onlyRoles(API_ROLE) {
-        if (!ArtistDB(artistDbAddress).exists(artistId)) revert();
-        ArtistDB(artistDbAddress).changeBasicData(artistId, name, metadataURI);
+        if (!ArtistDB(dbAddress.artist).exists(artistId)) revert();
+        ArtistDB(dbAddress.artist).changeBasicData(artistId, name, metadataURI);
 
-        if (ArtistDB(artistDbAddress).getAddress(artistId) != artistAddress) {
-            ArtistDB(artistDbAddress).changeAddress(artistId, artistAddress);
+        if (ArtistDB(dbAddress.artist).getAddress(artistId) != artistAddress) {
+            ArtistDB(dbAddress.artist).changeAddress(artistId, artistAddress);
         }
     }
 
     function registerUser(
         string memory username,
         string memory metadataURI,
-        address payable userAddress
+        address userAddress
     ) external onlyRoles(API_ROLE) returns (uint256) {
-        return
-            UserDB(userDbAddress).register(username, metadataURI, userAddress);
+        return UserDB(dbAddress.user).register(username, metadataURI, userAddress);
     }
 
     function changeDataOfUser(
         uint256 userId,
         string memory username,
         string memory metadataURI,
-        address payable userAddress
+        address userAddress
     ) external onlyRoles(API_ROLE) {
-        if (!UserDB(userDbAddress).exists(userId)) revert();
-        UserDB(userDbAddress).changeBasicData(userId, username, metadataURI);
+        if (!UserDB(dbAddress.user).exists(userId)) revert();
+        UserDB(dbAddress.user).changeBasicData(userId, username, metadataURI);
 
-        if (UserDB(userDbAddress).getAddress(userId) != userAddress) {
-            UserDB(userDbAddress).changeAddress(userId, userAddress);
+        if (UserDB(dbAddress.user).getAddress(userId) != userAddress) {
+            UserDB(dbAddress.user).changeAddress(userId, userAddress);
         }
     }
 
@@ -164,10 +125,10 @@ contract Orchestrator is OwnableRoles {
         bool canBePurchased,
         uint256 price
     ) external onlyRoles(API_ROLE) returns (uint256) {
-        if (!ArtistDB(artistDbAddress).exists(artistId)) revert();
+        if (!ArtistDB(dbAddress.artist).exists(artistId)) revert();
 
         return
-            SongDB(songDbAddress).register(
+            SongDB(dbAddress.song).register(
                 title,
                 artistId,
                 artistIDs,
@@ -188,13 +149,13 @@ contract Orchestrator is OwnableRoles {
         bool canBePurchased,
         uint256 price
     ) external onlyRoles(API_ROLE) {
-        if (!SongDB(songDbAddress).exists(songId)) revert();
+        if (!SongDB(dbAddress.song).exists(songId)) revert();
         if (
-            SongDB(artistDbAddress).getPrincipalArtistId(principalArtistId) !=
+            SongDB(dbAddress.artist).getPrincipalArtistId(principalArtistId) !=
             principalArtistId
         ) revert();
 
-        SongDB(songDbAddress).change(
+        SongDB(dbAddress.song).change(
             songId,
             title,
             principalArtistId,
@@ -211,10 +172,10 @@ contract Orchestrator is OwnableRoles {
         bool canBePurchased,
         uint256 price
     ) external onlyRoles(API_ROLE) {
-        if (!SongDB(songDbAddress).exists(songId)) revert();
+        if (!SongDB(dbAddress.song).exists(songId)) revert();
 
-        SongDB(songDbAddress).changePurchaseability(songId, canBePurchased);
-        SongDB(songDbAddress).changePrice(songId, price);
+        SongDB(dbAddress.song).changePurchaseability(songId, canBePurchased);
+        SongDB(dbAddress.song).changePrice(songId, price);
     }
 
     function registerAlbum(
@@ -228,13 +189,13 @@ contract Orchestrator is OwnableRoles {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external onlyRoles(API_ROLE) returns (uint256) {
-        if (!ArtistDB(artistDbAddress).exists(artistId)) revert();
+        if (!ArtistDB(dbAddress.artist).exists(artistId)) revert();
         for (uint256 i = 0; i < songIDs.length; i++) {
-            if (!SongDB(songDbAddress).exists(songIDs[i])) revert();
+            if (!SongDB(dbAddress.song).exists(songIDs[i])) revert();
         }
 
         return
-            AlbumDB(albumDbAddress).register(
+            AlbumDB(dbAddress.album).register(
                 title,
                 artistId,
                 metadataURI,
@@ -259,18 +220,18 @@ contract Orchestrator is OwnableRoles {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external onlyRoles(API_ROLE) {
-        if (!AlbumDB(albumDbAddress).exists(albumId)) revert();
+        if (!AlbumDB(dbAddress.album).exists(albumId)) revert();
 
         if (
-            AlbumDB(artistDbAddress).getPrincipalArtistId(principalArtistId) !=
+            AlbumDB(dbAddress.artist).getPrincipalArtistId(principalArtistId) !=
             principalArtistId
         ) revert();
 
         for (uint256 i = 0; i < songIDs.length; i++) {
-            if (!SongDB(songDbAddress).exists(songIDs[i])) revert();
+            if (!SongDB(dbAddress.song).exists(songIDs[i])) revert();
         }
 
-        AlbumDB(albumDbAddress).change(
+        AlbumDB(dbAddress.album).change(
             albumId,
             title,
             principalArtistId,
@@ -289,10 +250,59 @@ contract Orchestrator is OwnableRoles {
         bool canBePurchased,
         uint256 price
     ) external onlyRoles(API_ROLE) {
-        if (!AlbumDB(albumDbAddress).exists(albumId)) revert();
+        if (!AlbumDB(dbAddress.album).exists(albumId)) revert();
 
-        AlbumDB(albumDbAddress).changePurchaseability(albumId, canBePurchased);
-        AlbumDB(albumDbAddress).changePrice(albumId, price);
+        AlbumDB(dbAddress.album).changePurchaseability(albumId, canBePurchased);
+        AlbumDB(dbAddress.album).changePrice(albumId, price);
+    }
+
+    function buySong(
+        uint256 songId,
+        uint256 userId
+    ) external onlyRoles(API_ROLE) {
+        if (!SongDB(dbAddress.song).exists(songId)) revert();
+        if (!UserDB(dbAddress.user).exists(userId)) revert();
+        if (!SongDB(dbAddress.album).hasUserPurchased(songId, userId)) revert();
+        if (SongDB(dbAddress.song).canUserBuy(songId, userId)) revert();
+
+        uint256 price = SongDB(dbAddress.song).getPrice(songId);
+        if (UserDB(dbAddress.user).getBalance(userId) < price) revert();
+
+        uint256 principalArtistId = SongDB(dbAddress.song).getPrincipalArtistId(
+            songId
+        );
+
+        UserDB(dbAddress.user).deductBalance(userId, price);
+        ArtistDB(dbAddress.artist).addBalance(principalArtistId, price);
+        SongDB(dbAddress.song).purchase(songId, userId);
+        UserDB(dbAddress.user).addSong(userId, songId);
+
+        emit SongPurchased(songId, userId, price);
+    }
+
+    function buyAlbum(
+        uint256 albumId,
+        uint256 userId
+    ) external onlyRoles(API_ROLE) {
+        if (!AlbumDB(dbAddress.album).exists(albumId)) revert();
+        if (!UserDB(dbAddress.user).exists(userId)) revert();
+        if (AlbumDB(dbAddress.album).hasUserPurchased(albumId, userId)) revert();
+        if (AlbumDB(dbAddress.album).canUserBuy(albumId, userId)) revert();
+
+        uint256 price = AlbumDB(dbAddress.album).getPrice(albumId);
+        if (UserDB(dbAddress.user).getBalance(userId) < price) revert();
+
+        uint256 principalArtistId = AlbumDB(dbAddress.album).getPrincipalArtistId(
+            albumId
+        );
+
+        UserDB(dbAddress.user).deductBalance(userId, price);
+        ArtistDB(dbAddress.artist).addBalance(principalArtistId, price);
+        uint256[] memory songIds = AlbumDB(dbAddress.album).purchase(albumId, userId);
+
+        UserDB(dbAddress.user).addSongs(userId, songIds);
+
+        emit AlbumPurchased(albumId, userId, price);
     }
 
     function setAPIRole(
@@ -313,5 +323,15 @@ contract Orchestrator is OwnableRoles {
 
     function revokeAdminRole(address adminAddress) external onlyOwner {
         _removeRoles(adminAddress, ADMIN_ROLE);
+    }
+
+    function migrateOrchestrator(
+        address newOrchestratorAddress
+    ) external onlyOwner {
+        if (newOrchestratorAddress == address(0)) revert();
+        AlbumDB(dbAddress.album).transferOwnership(newOrchestratorAddress);
+        ArtistDB(dbAddress.artist).transferOwnership(newOrchestratorAddress);
+        SongDB(dbAddress.song).transferOwnership(newOrchestratorAddress);
+        UserDB(dbAddress.user).transferOwnership(newOrchestratorAddress);
     }
 }
