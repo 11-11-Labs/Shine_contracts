@@ -483,7 +483,6 @@ contract Orchestrator_test_unit_correct is Constants {
         );
     }
 
-
     function test_unit_correct_Orchestrator__changeDataOfAlbum() public {
         vm.startPrank(API.Address);
 
@@ -581,6 +580,67 @@ contract Orchestrator_test_unit_correct is Constants {
             50,
             "Max supply for special edition should be updated"
         );
+    }
+
+
+    function test_unit_correct_Orchestrator__changePurchaseabilityAndPriceOfAlbum() public {
+        vm.startPrank(API.Address);
+
+        /*uint256 userId =*/ orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        uint256[] memory artistIDs = new uint256[](0);
+        uint256 songId = orchestrator.registerSong(
+            artistId,
+            "Song Title",
+            artistIDs,
+            "ipfs://songMediaURI",
+            "ipfs://songMetadataURI",
+            false,
+            180
+        );
+
+        uint256[] memory songIDs = new uint256[](1);
+        songIDs[0] = songId;
+
+        uint256 albumId = orchestrator.registerAlbum(
+            artistId,
+            "Album Title",
+            "ipfs://albumMetadataURI",
+            songIDs,
+            500,
+            true,
+            false,
+            "",
+            0
+        );
+
+        orchestrator.changePurchaseabilityAndPriceOfAlbum(
+            albumId,
+            artistId,
+            false,
+            1000
+        );
+
+        vm.stopPrank();
+
+        assertFalse(
+            albumDB.isPurschaseable(albumId),
+            "Album should not be purchasable after update"
+        );
+        assertEq(
+            albumDB.getMetadata(albumId).Price,
+            1000,
+            "Price should be updated to the new price"
+        );
+
 
     }
 }
