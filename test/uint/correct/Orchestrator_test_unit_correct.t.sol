@@ -763,4 +763,82 @@ contract Orchestrator_test_unit_correct is Constants {
             "All song IDs from the album should be added to the user's purchased songs"
         );
     }
+
+    function test_unit_correct_Orchestrator__addBalanceToUser() public {
+        vm.startPrank(API.Address);
+
+        uint256 userId = orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        orchestrator.addBalanceToUser(userId, 1000);
+        vm.stopPrank();
+
+        assertEq(
+            userDB.getMetadata(userId).balance,
+            1000,
+            "User balance should be increased by the added amount"
+        );
+    }
+
+    function test_unit_correct_Orchestrator__deductBalanceFromUser() public {
+        vm.startPrank(API.Address);
+
+        uint256 userId = orchestrator.registerUser(
+            "Username",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        orchestrator.addBalanceToUser(userId, 1000);
+        orchestrator.deductBalanceFromUser(userId, 500);
+        vm.stopPrank();
+
+        assertEq(
+            userDB.getMetadata(userId).balance,
+            500,
+            "User balance should be decreased by the deducted amount"
+        );
+    }
+
+    function test_unit_correct_Orchestrator__addBalanceToArtist() public {
+        vm.startPrank(API.Address);
+
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        orchestrator.addBalanceToArtist(artistId, 2000);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(artistId).Balance,
+            2000,
+            "Artist balance should be increased by the added amount"
+        );
+    }
+
+    function test_unit_correct_Orchestrator__deductBalanceFromArtist() public {
+        vm.startPrank(API.Address);
+
+        uint256 artistId = orchestrator.registerArtist(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        orchestrator.addBalanceToArtist(artistId, 2000);
+        orchestrator.deductBalanceFromArtist(artistId, 750);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(artistId).Balance,
+            1250,
+            "Artist balance should be decreased by the deducted amount"
+        );
+    }
+
+
+
+
 }
