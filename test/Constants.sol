@@ -6,12 +6,14 @@ import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
 import {SongDB} from "@shine/contracts/database/SongDB.sol";
 import {UserDB} from "@shine/contracts/database/UserDB.sol";
+import {Orchestrator} from "@shine/contracts/Orchestrator.sol";
 
 abstract contract Constants is Test {
     AlbumDB albumDB;
     ArtistDB artistDB;
     SongDB songDB;
     UserDB userDB;
+    Orchestrator orchestrator;
 
     struct AccountData {
         address Address;
@@ -69,8 +71,9 @@ abstract contract Constants is Test {
     AccountData FAKE_ORCHESTRATOR = ACCOUNT1;
     AccountData ADMIN = ACCOUNT2;
     AccountData API = ACCOUNT3;
-    AccountData USER = ACCOUNT4;
-    AccountData ARTIST = ACCOUNT5;
+    AccountData SUDO = ACCOUNT4;
+    AccountData USER = ACCOUNT5;
+    AccountData ARTIST = ACCOUNT6;
 
     function setUp() public {
         executeBeforeSetUp();
