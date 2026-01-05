@@ -18,6 +18,13 @@ import {IdUtils} from "@shine/library/IdUtils.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract AlbumDB is IdUtils, Ownable {
+    error UserBoughtAlbum();
+    error AlbumNotPurchasable();
+    error AlbumNotSpecialEdition();
+    error AlbumMaxSupplyReached();
+    error UserNotBoughtAlbum();
+    error AlbumCannotHaveZeroSongs();
+
     struct SongMetadata {
         string Title;
         uint256 PrincipalArtistId;
@@ -71,9 +78,9 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner returns (uint256[] memory) {
-        if (isBoughtByUserId[id][userId]) revert();
+        if (isBoughtByUserId[id][userId]) revert UserBoughtAlbum();
 
-        if (!albums[id].CanBePurchased) revert();
+        if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
 
         isBoughtByUserId[id][userId] = true;
         albums[id].TimesBought++;
@@ -85,14 +92,14 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner returns (uint256[] memory) {
-        if (isBoughtByUserId[id][userId]) revert();
+        if (isBoughtByUserId[id][userId]) revert UserBoughtAlbum();
 
-        if (!albums[id].CanBePurchased) revert();
+        if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
 
-        if (!albums[id].IsASpecialEdition) revert();
+        if (!albums[id].IsASpecialEdition) revert AlbumNotSpecialEdition();
 
         if (albums[id].TimesBought >= albums[id].MaxSupplySpecialEdition)
-            revert();
+            revert AlbumMaxSupplyReached();
 
         isBoughtByUserId[id][userId] = true;
         albums[id].TimesBought++;
@@ -103,7 +110,7 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner returns (uint256[] memory, uint256) {
-        if (!isBoughtByUserId[id][userId]) revert();
+        if (!isBoughtByUserId[id][userId]) revert UserNotBoughtAlbum();
 
         isBoughtByUserId[id][userId] = false;
         albums[id].TimesBought--;
@@ -123,7 +130,7 @@ contract AlbumDB is IdUtils, Ownable {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external onlyOwner {
-        if (musicIds.length == 0) revert();
+        if (musicIds.length == 0) revert AlbumCannotHaveZeroSongs();
 
         albums[id] = SongMetadata({
             Title: title,
