@@ -68,6 +68,36 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
+    function test_unit_revert_AlbumDB__purchase__AlbumIsBanned() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        albumDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
+        albumDB.purchase(assignedId, 1234);
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
     function test_unit_revert_AlbumDB__purchase__UserBoughtAlbum() public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
@@ -151,6 +181,40 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
+        albumDB.purchaseSpecialEdition(assignedId, 1234);
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_AlbumDB__purchaseSpecialEdition__AlbumIsBanned()
+        public
+    {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            true,
+            "Special Ultra Turbo Deluxe Edition Remaster Battle Royale with Banjo-Kazooie & Nnuckles NEW Funky Mode (Featuring Dante from Devil May Cry Series)",
+            67
+            // he he c:
+        );
+        // banned for cringe, oh no :c
+        albumDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
         albumDB.purchaseSpecialEdition(assignedId, 1234);
         vm.stopPrank();
 
@@ -431,6 +495,87 @@ contract AlbumDB_test_unit_revert is Constants {
             "MaxSupplySpecialEdition should be the same due to revert"
         );
     }
+
+    function test_unit_revert_AlbumDB__change__AlbumIsBanned() public {
+        uint256[] memory listOfSongIDsBefore = new uint256[](3);
+        listOfSongIDsBefore[0] = 67;
+        listOfSongIDsBefore[1] = 21;
+        listOfSongIDsBefore[2] = 420;
+
+        uint256[] memory listOfSongIDsAfter = new uint256[](2);
+        listOfSongIDsAfter[0] = 67;
+        listOfSongIDsAfter[1] = 21;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDsBefore,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        albumDB.setBannedStatus(assignedId, true);
+
+        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
+        albumDB.change(
+            assignedId,
+            "New Album Title",
+            2,
+            "ipfs://newMetadataURI",
+            listOfSongIDsAfter,
+            2000,
+            true,
+            true,
+            "Special Ultra Turbo Deluxe Edition Remaster Battle Royale with Banjo-Kazooie & Nnuckles NEW Funky Mode (Featuring Dante from Devil May Cry Series)",
+            67
+        );
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(assignedId).Title,
+            "Album Title",
+            "Title should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).PrincipalArtistId,
+            1,
+            "PrincipalArtistId should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).MetadataURI,
+            "ipfs://metadataURI",
+            "MetadataURI should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).MusicIds.length,
+            3,
+            "MusicIds length should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).Price,
+            1000,
+            "Price should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).IsASpecialEdition,
+            false,
+            "IsASpecialEdition should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).SpecialEditionName,
+            "",
+            "SpecialEditionName should be the same due to revert"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
+            0,
+            "MaxSupplySpecialEdition should be the same due to revert"
+        );
+    }
     
     function test_unit_revert_AlbumDB__change__AlbumCannotHaveZeroSongs() public {
         uint256[] memory listOfSongIDsBefore = new uint256[](3);
@@ -541,6 +686,36 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
+    function test_unit_revert_AlbumDB__changePurchaseability__AlbumIsBanned() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        albumDB.setBannedStatus(assignedId, true);
+
+        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
+        albumDB.changePurchaseability(assignedId, false);
+        vm.stopPrank();
+
+        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
+        albumDB.isPurschaseable(assignedId);
+
+        
+    }
+
     function test_unit_revert_AlbumDB__changePrice__Unauthorized() public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
@@ -568,6 +743,64 @@ contract AlbumDB_test_unit_revert is Constants {
             albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should be the same due to revert"
+        );
+    }
+
+    function test_unit_revert_AlbumDB__changePrice__AlbumIsBanned() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        albumDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
+        albumDB.changePrice(assignedId, 67);
+        vm.stopPrank();
+        assertEq(
+            albumDB.getMetadata(assignedId).Price,
+            1000,
+            "Price should be the same due to revert"
+        );
+    }
+
+    function test_unit_correct_AlbumDB__setBannedStatus__Unauthorized() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        albumDB.setBannedStatus(assignedId, true);
+        vm.stopPrank();
+        assertFalse(
+            albumDB.getMetadata(assignedId).IsBanned,
+            "Album should remain unbanned due to revert"
         );
     }
     

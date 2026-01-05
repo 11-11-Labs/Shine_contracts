@@ -309,4 +309,30 @@ contract AlbumDB_test_unit_correct is Constants {
             "Price should be updated"
         );
     }
+
+    function test_unit_correct_AlbumDB__setBannedStatus() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        albumDB.setBannedStatus(assignedId, true);
+        vm.stopPrank();
+        assertTrue(
+            albumDB.getMetadata(assignedId).IsBanned,
+            "Album should be banned"
+        );
+    }
 }
