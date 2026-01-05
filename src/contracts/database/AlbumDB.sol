@@ -20,6 +20,7 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 contract AlbumDB is IdUtils, Ownable {
     error UserBoughtAlbum();
     error AlbumNotPurchasable();
+    error AlbumIsBanned();
     error AlbumNotSpecialEdition();
     error AlbumMaxSupplyReached();
     error UserNotBoughtAlbum();
@@ -36,6 +37,7 @@ contract AlbumDB is IdUtils, Ownable {
         bool IsASpecialEdition;
         string SpecialEditionName;
         uint256 MaxSupplySpecialEdition;
+        bool IsBanned;
     }
 
     mapping(uint256 Id => mapping(uint256 userId => bool)) isBoughtByUserId;
@@ -68,7 +70,8 @@ contract AlbumDB is IdUtils, Ownable {
             CanBePurchased: canBePurchased,
             IsASpecialEdition: isASpecialEdition,
             SpecialEditionName: specialEditionName,
-            MaxSupplySpecialEdition: maxSupplySpecialEdition
+            MaxSupplySpecialEdition: maxSupplySpecialEdition,
+            IsBanned: false
         });
 
         return idAssigned;
@@ -78,6 +81,8 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner returns (uint256[] memory) {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
+
         if (isBoughtByUserId[id][userId]) revert UserBoughtAlbum();
 
         if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
@@ -92,6 +97,8 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner returns (uint256[] memory) {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
+
         if (isBoughtByUserId[id][userId]) revert UserBoughtAlbum();
 
         if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
@@ -130,6 +137,8 @@ contract AlbumDB is IdUtils, Ownable {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external onlyOwner {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
+
         if (musicIds.length == 0) revert AlbumCannotHaveZeroSongs();
 
         albums[id] = SongMetadata({
@@ -142,7 +151,8 @@ contract AlbumDB is IdUtils, Ownable {
             CanBePurchased: canBePurchased,
             IsASpecialEdition: isASpecialEdition,
             SpecialEditionName: specialEditionName,
-            MaxSupplySpecialEdition: maxSupplySpecialEdition
+            MaxSupplySpecialEdition: maxSupplySpecialEdition,
+            IsBanned: albums[id].IsBanned
         });
     }
 
@@ -150,11 +160,21 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         bool canBePurchased
     ) external onlyOwner {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
+        
         albums[id].CanBePurchased = canBePurchased;
     }
 
     function changePrice(uint256 id, uint256 price) external onlyOwner {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
         albums[id].Price = price;
+    }
+
+    function setBannedStatus(
+        uint256 id,
+        bool isBanned
+    ) external onlyOwner {
+        albums[id].IsBanned = isBanned;
     }
 
     function exists(uint256 id) external view returns (bool) {
@@ -165,14 +185,17 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
         return isBoughtByUserId[id][userId];
     }
 
     function getPrice(uint256 id) external view returns (uint256) {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
         return albums[id].Price;
     }
 
     function isPurschaseable(uint256 id) external view returns (bool) {
+        if (albums[id].IsBanned) revert AlbumIsBanned();
         return albums[id].CanBePurchased;
     }
 
