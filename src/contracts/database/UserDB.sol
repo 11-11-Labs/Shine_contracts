@@ -17,16 +17,32 @@ import {IdUtils} from "@shine/library/IdUtils.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract UserDB is IdUtils, Ownable {
+    error UserIsBanned();
+    error UserDoesNotExist();
+    error UsernameIsEmpty();
+    error UserAddressIsEmpty();
+
     struct User {
-        string username;
-        string metadataURI;
-        address userAddress;
-        uint256[] purchasedSongIds;
-        uint256 balance;
+        string Username;
+        string MetadataURI;
+        address UserAddress;
+        uint256[] PurchasedSongIds;
+        uint256 Balance;
+        bool IsBanned;
     }
 
     mapping(address userAddress => uint256 id) private addressUser;
     mapping(uint256 Id => User) private users;
+
+    modifier onlyIfExist(uint256 id) {
+        if (!exists(id)) revert UserDoesNotExist();
+        _;
+    }
+
+    modifier onlyIfNotBanned(uint256 id) {
+        if (users[id].IsBanned) revert UserIsBanned();
+        _;
+    }
 
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
@@ -40,11 +56,12 @@ contract UserDB is IdUtils, Ownable {
         uint256 idAssigned = _getNextId();
 
         users[idAssigned] = User({
-            username: username,
-            metadataURI: metadataURI,
-            userAddress: userAddress,
-            purchasedSongIds: new uint256[](0),
-            balance: 0
+            Username: username,
+            MetadataURI: metadataURI,
+            UserAddress: userAddress,
+            PurchasedSongIds: new uint256[](0),
+            Balance: 0,
+            IsBanned: false
         });
 
         addressUser[userAddress] = idAssigned;
@@ -56,33 +73,36 @@ contract UserDB is IdUtils, Ownable {
         uint256 id,
         string memory username,
         string memory metadataURI
-    ) external onlyOwner {
-        if (bytes(users[id].username).length == 0) {
-            revert();
-        }
-        users[id].username = username;
-        users[id].metadataURI = metadataURI;
+    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
+        if (bytes(username).length == 0) revert UsernameIsEmpty();
+
+        users[id].Username = username;
+        users[id].MetadataURI = metadataURI;
     }
 
     function changeAddress(
         uint256 id,
         address newUserAddress
-    ) external onlyOwner {
-        if (bytes(users[id].username).length == 0) {
-            revert();
-        }
+    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
+        if (newUserAddress == address(0)) revert UserAddressIsEmpty();
 
-        addressUser[users[id].userAddress] = 0;
-        users[id].userAddress = newUserAddress;
+        addressUser[users[id].UserAddress] = 0;
+        users[id].UserAddress = newUserAddress;
         addressUser[newUserAddress] = id;
     }
 
-    function addSong(uint256 userId, uint256 songId) external onlyOwner {
-        users[userId].purchasedSongIds.push(songId);
+    function addSong(
+        uint256 userId,
+        uint256 songId
+    ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
+        users[userId].PurchasedSongIds.push(songId);
     }
 
-    function deleteSong(uint256 userId, uint256 songId) external onlyOwner {
-        uint256[] storage songIds = users[userId].purchasedSongIds;
+    function deleteSong(
+        uint256 userId,
+        uint256 songId
+    ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
+        uint256[] storage songIds = users[userId].PurchasedSongIds;
         uint256 len = songIds.length;
 
         for (uint256 i; i < len; ) {
@@ -105,10 +125,10 @@ contract UserDB is IdUtils, Ownable {
     function addSongs(
         uint256 userId,
         uint256[] calldata songIds
-    ) external onlyOwner {
+    ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
         uint256 len = songIds.length;
         for (uint256 i; i < len; ) {
-            users[userId].purchasedSongIds.push(songIds[i]);
+            users[userId].PurchasedSongIds.push(songIds[i]);
             unchecked {
                 ++i;
             }
@@ -118,8 +138,8 @@ contract UserDB is IdUtils, Ownable {
     function deleteSongs(
         uint256 userId,
         uint256[] calldata songIdsToDelete
-    ) external onlyOwner {
-        uint256[] storage songIds = users[userId].purchasedSongIds;
+    ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
+        uint256[] storage songIds = users[userId].PurchasedSongIds;
         uint256 len = songIds.length;
         uint256 deleteLen = songIdsToDelete.length;
 
@@ -160,12 +180,18 @@ contract UserDB is IdUtils, Ownable {
         }
     }
 
-    function addBalance(uint256 userId, uint256 amount) external onlyOwner {
-        users[userId].balance += amount;
+    function addBalance(
+        uint256 userId,
+        uint256 amount
+    ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
+        users[userId].Balance += amount;
     }
 
-    function deductBalance(uint256 userId, uint256 amount) external onlyOwner {
-        users[userId].balance -= amount;
+    function deductBalance(
+        uint256 userId,
+        uint256 amount
+    ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
+        users[userId].Balance -= amount;
     }
 
     function getMetadata(uint256 id) external view returns (User memory) {
@@ -175,17 +201,11 @@ contract UserDB is IdUtils, Ownable {
     function getPurchasedSong(
         uint256 userId
     ) external view returns (uint256[] memory) {
-        return users[userId].purchasedSongIds;
-    }
-
-    function exists(uint256 id) external view returns (bool) {
-        return
-            bytes(users[id].username).length != 0 &&
-            users[id].userAddress != address(0);
+        return users[userId].PurchasedSongIds;
     }
 
     function getAddress(uint256 id) external view returns (address) {
-        return users[id].userAddress;
+        return users[id].UserAddress;
     }
 
     function getId(address userAddress) external view returns (uint256) {
@@ -193,6 +213,6 @@ contract UserDB is IdUtils, Ownable {
     }
 
     function getBalance(uint256 userId) external view returns (uint256) {
-        return users[userId].balance;
+        return users[userId].Balance;
     }
 }

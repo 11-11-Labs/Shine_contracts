@@ -18,20 +18,37 @@ import {IdUtils} from "@shine/library/IdUtils.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract SongDB is IdUtils, Ownable {
+    error SongDoesNotExist();
+    error SongIsBanned();
+    error SongCannotBePurchased();
+    error UserAlreadyBought();
+    error UserHasNotBought();
+
     struct SongMetadata {
-        string title;
-        uint256 principalArtistId;
-        uint256[] artistIDs;
-        string mediaURI;
-        string metadataURI;
-        bool canBePurchased;
-        uint256 price;
-        uint256 timesBought;
+        string Title;
+        uint256 PrincipalArtistId;
+        uint256[] ArtistIDs;
+        string MediaURI;
+        string MetadataURI;
+        bool CanBePurchased;
+        uint256 Price;
+        uint256 TimesBought;
+        bool IsBanned;
     }
 
     mapping(uint256 Id => mapping(uint256 userId => bool))
         private isBoughtByUserId;
     mapping(uint256 Id => SongMetadata) private songs;
+
+    modifier onlyIfExist(uint256 id) {
+        if (!exists(id)) revert SongDoesNotExist();
+        _;
+    }
+
+    modifier onlyIfNotBanned(uint256 id) {
+        if (songs[id].IsBanned) revert SongIsBanned();
+        _;
+    }
 
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
@@ -49,14 +66,15 @@ contract SongDB is IdUtils, Ownable {
         uint256 idAssigned = _getNextId();
 
         songs[idAssigned] = SongMetadata({
-            title: title,
-            principalArtistId: principalArtistId,
-            artistIDs: artistIDs,
-            mediaURI: mediaURI,
-            metadataURI: metadataURI,
-            canBePurchased: canBePurchased,
-            price: price,
-            timesBought: 0
+            Title: title,
+            PrincipalArtistId: principalArtistId,
+            ArtistIDs: artistIDs,
+            MediaURI: mediaURI,
+            MetadataURI: metadataURI,
+            CanBePurchased: canBePurchased,
+            Price: price,
+            TimesBought: 0,
+            IsBanned: false
         });
 
         return idAssigned;
@@ -71,36 +89,39 @@ contract SongDB is IdUtils, Ownable {
         string memory metadataURI,
         bool canBePurchased,
         uint256 price
-    ) external onlyOwner {
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         songs[id] = SongMetadata({
-            title: title,
-            principalArtistId: principalArtistId,
-            artistIDs: artistIDs,
-            mediaURI: mediaURI,
-            metadataURI: metadataURI,
-            canBePurchased: canBePurchased,
-            price: price,
-            timesBought: songs[id].timesBought
+            Title: title,
+            PrincipalArtistId: principalArtistId,
+            ArtistIDs: artistIDs,
+            MediaURI: mediaURI,
+            MetadataURI: metadataURI,
+            CanBePurchased: canBePurchased,
+            Price: price,
+            TimesBought: songs[id].TimesBought,
+            IsBanned: songs[id].IsBanned
         });
     }
 
-    function purchase(uint256 id, uint256 userId) external onlyOwner {
-        if (!songs[id].canBePurchased) revert();
-        if (isBoughtByUserId[id][userId]) revert();
+    function purchase(
+        uint256 id,
+        uint256 userId
+    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
+        if (!songs[id].CanBePurchased) revert SongCannotBePurchased();
+        if (isBoughtByUserId[id][userId]) revert UserAlreadyBought();
 
         isBoughtByUserId[id][userId] = true;
-        songs[id].timesBought++;
+        songs[id].TimesBought++;
     }
 
     function refund(
         uint256 id,
         uint256 userId
-    ) external onlyOwner returns (bool) {
-        if (!songs[id].canBePurchased) revert();
-        if (!isBoughtByUserId[id][userId]) revert();
+    ) external onlyOwner onlyIfExist(id) returns (bool) {
+        if (!isBoughtByUserId[id][userId]) revert UserHasNotBought();
 
         isBoughtByUserId[id][userId] = false;
-        songs[id].timesBought--;
+        songs[id].TimesBought--;
 
         return true;
     }
@@ -108,16 +129,22 @@ contract SongDB is IdUtils, Ownable {
     function changePurchaseability(
         uint256 id,
         bool canBePurchased
-    ) external onlyOwner {
-        songs[id].canBePurchased = canBePurchased;
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
+        songs[id].CanBePurchased = canBePurchased;
     }
 
-    function changePrice(uint256 id, uint256 price) external onlyOwner {
-        songs[id].price = price;
+    function changePrice(
+        uint256 id,
+        uint256 price
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
+        songs[id].Price = price;
     }
 
-    function exists(uint256 id) external view returns (bool) {
-        return bytes(songs[id].title).length != 0;
+    function setBannedStatus(
+        uint256 id,
+        bool isBanned
+    ) external onlyOwner onlyIfExist(id) {
+        songs[id].IsBanned = isBanned;
     }
 
     function isBoughtByUser(
@@ -142,15 +169,19 @@ contract SongDB is IdUtils, Ownable {
     }
 
     function getPrice(uint256 id) external view returns (uint256) {
-        return songs[id].price;
+        return songs[id].Price;
     }
 
     function getPrincipalArtistId(uint256 id) external view returns (uint256) {
-        return songs[id].principalArtistId;
+        return songs[id].PrincipalArtistId;
     }
 
     function isPurschaseable(uint256 id) external view returns (bool) {
-        return songs[id].canBePurchased;
+        return songs[id].CanBePurchased;
+    }
+
+    function checkIsBanned(uint256 id) external view returns (bool) {
+        return songs[id].IsBanned;
     }
 
     function getMetadata(

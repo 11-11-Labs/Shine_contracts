@@ -19,7 +19,7 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 contract ArtistDB is IdUtils, Ownable {
     error ArtistIsBanned();
     error NameShouldNotBeEmpty();
-    error ArtistIdDoesNotExist();
+    error ArtistDoesNotExist();
 
     struct Artist {
         string Name;
@@ -27,11 +27,21 @@ contract ArtistDB is IdUtils, Ownable {
         address Address;
         uint256 Balance;
         uint256 AccumulatedRoyalties;
-        bool isBanned;
+        bool IsBanned;
     }
 
     mapping(address artistAddress => uint256 id) private addressArtist;
     mapping(uint256 id => Artist) private artists;
+
+    modifier onlyIfExist(uint256 id) {
+        if (!exists(id)) revert ArtistDoesNotExist();
+        _;
+    }
+
+    modifier onlyIfNotBanned(uint256 id) {
+        if (artists[id].IsBanned) revert ArtistIsBanned();
+        _;
+    }
 
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
@@ -51,7 +61,7 @@ contract ArtistDB is IdUtils, Ownable {
             Address: artistAddress,
             Balance: 0,
             AccumulatedRoyalties: 0,
-            isBanned: false
+            IsBanned: false
         });
 
         return idAssigned;
@@ -61,10 +71,8 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 id,
         string memory name,
         string memory metadataURI
-    ) external onlyOwner {
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         if (bytes(name).length == 0) revert NameShouldNotBeEmpty();
-        if (bytes(artists[id].Name).length == 0) revert ArtistIdDoesNotExist();
-        if (artists[id].isBanned) revert ArtistIsBanned();
 
         artists[id].Name = name;
         artists[id].MetadataURI = metadataURI;
@@ -73,52 +81,49 @@ contract ArtistDB is IdUtils, Ownable {
     function changeAddress(
         uint256 id,
         address newArtistAddress
-    ) external onlyOwner {
-        if (bytes(artists[id].Name).length == 0) revert ArtistIdDoesNotExist();
-        if (artists[id].isBanned) revert ArtistIsBanned();
-
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         addressArtist[artists[id].Address] = 0;
         artists[id].Address = newArtistAddress;
         addressArtist[newArtistAddress] = id;
     }
 
-    function addBalance(uint256 artistId, uint256 amount) external onlyOwner {
+    function addBalance(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyOwner onlyIfExist(artistId) onlyIfNotBanned(artistId) {
         artists[artistId].Balance += amount;
     }
 
     function deductBalance(
         uint256 artistId,
         uint256 amount
-    ) external onlyOwner {
+    ) external onlyOwner onlyIfExist(artistId) {
         artists[artistId].Balance -= amount;
     }
 
     function addAccumulatedRoyalties(
         uint256 artistId,
         uint256 amount
-    ) external onlyOwner {
+    ) external onlyOwner onlyIfExist(artistId) onlyIfNotBanned(artistId) {
         artists[artistId].AccumulatedRoyalties += amount;
     }
 
     function deductAccumulatedRoyalties(
         uint256 artistId,
         uint256 amount
-    ) external onlyOwner {
+    ) external onlyOwner onlyIfExist(artistId) {
         artists[artistId].AccumulatedRoyalties -= amount;
     }
 
-    function setBannedStatus(uint256 artistId, bool action) external onlyOwner {
-        artists[artistId].isBanned = action;
+    function setBannedStatus(
+        uint256 artistId,
+        bool action
+    ) external onlyOwner onlyIfExist(artistId) {
+        artists[artistId].IsBanned = action;
     }
 
     function getMetadata(uint256 id) external view returns (Artist memory) {
         return artists[id];
-    }
-
-    function exists(uint256 id) external view returns (bool) {
-        return
-            bytes(artists[id].Name).length != 0 &&
-            artists[id].Address != address(0);
     }
 
     function getAddress(uint256 id) external view returns (address) {
@@ -131,5 +136,9 @@ contract ArtistDB is IdUtils, Ownable {
 
     function getBalance(uint256 artistId) external view returns (uint256) {
         return artists[artistId].Balance;
+    }
+
+    function checkIsBanned(uint256 id) external view returns (bool) {
+        return artists[id].IsBanned;
     }
 }
