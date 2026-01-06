@@ -98,6 +98,19 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
+    function test_unit_revert_AlbumDB__purchase__AlbumDoesNotExist() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.purchase(9999, 1234);
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(9999).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
     function test_unit_revert_AlbumDB__purchase__UserBoughtAlbum() public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
@@ -220,6 +233,21 @@ contract AlbumDB_test_unit_revert is Constants {
 
         assertEq(
             albumDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_AlbumDB__purchaseSpecialEdition__AlbumDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.purchaseSpecialEdition(9999, 1234);
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(9999).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
         );
@@ -383,6 +411,19 @@ contract AlbumDB_test_unit_revert is Constants {
             albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be 1 because of revert"
+        );
+    }
+
+    function test_unit_revert_AlbumDB__refund__AlbunDoesNotExist() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.refund(9999, 1234);
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(9999).TimesBought,
+            0,
+            "Times bought should be 0 because of revert"
         );
     }
 
@@ -576,8 +617,38 @@ contract AlbumDB_test_unit_revert is Constants {
             "MaxSupplySpecialEdition should be the same due to revert"
         );
     }
-    
-    function test_unit_revert_AlbumDB__change__AlbumCannotHaveZeroSongs() public {
+
+    function test_unit_revert_AlbumDB__change__AlbumDoesNotExist() public {
+        uint256[] memory listOfSongIDsAfter = new uint256[](2);
+        listOfSongIDsAfter[0] = 67;
+        listOfSongIDsAfter[1] = 21;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.change(
+            9999,
+            "New Album Title",
+            2,
+            "ipfs://newMetadataURI",
+            listOfSongIDsAfter,
+            2000,
+            true,
+            true,
+            "Special Ultra Turbo Deluxe Edition Remaster Battle Royale with Banjo-Kazooie & Nnuckles NEW Funky Mode (Featuring Dante from Devil May Cry Series)",
+            67
+        );
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(9999).MaxSupplySpecialEdition,
+            0,
+            "MaxSupplySpecialEdition should be 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_AlbumDB__change__AlbumCannotHaveZeroSongs()
+        public
+    {
         uint256[] memory listOfSongIDsBefore = new uint256[](3);
         listOfSongIDsBefore[0] = 67;
         listOfSongIDsBefore[1] = 21;
@@ -655,8 +726,9 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
-    
-    function test_unit_revert_AlbumDB__changePurchaseability__Unauthorized() public {
+    function test_unit_revert_AlbumDB__changePurchaseability__Unauthorized()
+        public
+    {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -686,7 +758,9 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_revert_AlbumDB__changePurchaseability__AlbumIsBanned() public {
+    function test_unit_revert_AlbumDB__changePurchaseability__AlbumIsBanned()
+        public
+    {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -712,8 +786,15 @@ contract AlbumDB_test_unit_revert is Constants {
 
         vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
         albumDB.isPurschaseable(assignedId);
+    }
 
-        
+    function test_unit_revert_AlbumDB__changePurchaseability__AlbumDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.changePurchaseability(9999, false);
+        vm.stopPrank();
     }
 
     function test_unit_revert_AlbumDB__changePrice__Unauthorized() public {
@@ -775,6 +856,19 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
+    function test_unit_revert_AlbumDB__changePrice__AlbumDoesNotExist() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.changePrice(9999, 67);
+        vm.stopPrank();
+
+        assertEq(
+            albumDB.getMetadata(9999).Price,
+            0,
+            "Price should be 0 due to revert"
+        );
+    }
+
     function test_unit_correct_AlbumDB__setBannedStatus__Unauthorized() public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
@@ -803,5 +897,16 @@ contract AlbumDB_test_unit_revert is Constants {
             "Album should remain unbanned due to revert"
         );
     }
-    
+
+    function test_unit_correct_AlbumDB__setBannedStatus__AlbumDoesNotExist() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
+        albumDB.setBannedStatus(9999, true);
+        vm.stopPrank();
+
+        assertFalse(
+            albumDB.getMetadata(9999).IsBanned,
+            "Album should remain unbanned due to revert"
+        );
+    }
 }
