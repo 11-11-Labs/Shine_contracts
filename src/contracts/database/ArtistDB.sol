@@ -52,7 +52,6 @@ contract ArtistDB is IdUtils, Ownable {
         string memory metadataURI,
         address artistAddress
     ) external onlyOwner returns (uint256) {
-        if (bytes(name).length == 0) revert NameShouldNotBeEmpty();
         uint256 idAssigned = _getNextId();
 
         artists[idAssigned] = Artist({
