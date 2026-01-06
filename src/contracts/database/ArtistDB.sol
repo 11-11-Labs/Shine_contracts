@@ -17,12 +17,17 @@ import {IdUtils} from "@shine/library/IdUtils.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract ArtistDB is IdUtils, Ownable {
+    error ArtistIsBanned();
+    error NameShouldNotBeEmpty();
+    error ArtistIdDoesNotExist();
+
     struct Artist {
         string Name;
         string MetadataURI;
         address Address;
         uint256 Balance;
         uint256 AccumulatedRoyalties;
+        bool isBanned;
     }
 
     mapping(address artistAddress => uint256 id) private addressArtist;
@@ -37,6 +42,7 @@ contract ArtistDB is IdUtils, Ownable {
         string memory metadataURI,
         address artistAddress
     ) external onlyOwner returns (uint256) {
+        if (bytes(name).length == 0) revert NameShouldNotBeEmpty();
         uint256 idAssigned = _getNextId();
 
         artists[idAssigned] = Artist({
@@ -44,7 +50,8 @@ contract ArtistDB is IdUtils, Ownable {
             MetadataURI: metadataURI,
             Address: artistAddress,
             Balance: 0,
-            AccumulatedRoyalties: 0
+            AccumulatedRoyalties: 0,
+            isBanned: false
         });
 
         return idAssigned;
@@ -55,9 +62,9 @@ contract ArtistDB is IdUtils, Ownable {
         string memory name,
         string memory metadataURI
     ) external onlyOwner {
-        if (bytes(artists[id].Name).length == 0) {
-            revert();
-        }
+        if (bytes(name).length == 0) revert NameShouldNotBeEmpty();
+        if (bytes(artists[id].Name).length == 0) revert ArtistIdDoesNotExist();
+        if (artists[id].isBanned) revert ArtistIsBanned();
 
         artists[id].Name = name;
         artists[id].MetadataURI = metadataURI;
@@ -67,9 +74,8 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 id,
         address newArtistAddress
     ) external onlyOwner {
-        if (bytes(artists[id].Name).length == 0) {
-            revert();
-        }
+        if (bytes(artists[id].Name).length == 0) revert ArtistIdDoesNotExist();
+        if (artists[id].isBanned) revert ArtistIsBanned();
 
         addressArtist[artists[id].Address] = 0;
         artists[id].Address = newArtistAddress;
@@ -101,6 +107,10 @@ contract ArtistDB is IdUtils, Ownable {
         artists[artistId].AccumulatedRoyalties -= amount;
     }
 
+    function setBannedStatus(uint256 artistId, bool action) external onlyOwner {
+        artists[artistId].isBanned = action;
+    }
+
     function getMetadata(uint256 id) external view returns (Artist memory) {
         return artists[id];
     }
@@ -115,9 +125,7 @@ contract ArtistDB is IdUtils, Ownable {
         return artists[id].Address;
     }
 
-    function getId(
-        address artistAddress
-    ) external view returns (uint256) {
+    function getId(address artistAddress) external view returns (uint256) {
         return addressArtist[artistAddress];
     }
 
