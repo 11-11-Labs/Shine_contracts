@@ -16,6 +16,7 @@ abstract contract IdUtils {
     uint256 internal _id;
     uint256 constant NULL_ID = 0;
 
+
     function _getNextId() internal returns (uint256) {
         _id++;
         return _id;
@@ -27,5 +28,9 @@ abstract contract IdUtils {
 
     function getCurrentId() public view returns (uint256) {
         return _id;
+    }
+
+    function exists(uint256 id) public view returns (bool) {
+        return _id >= id && id != NULL_ID;
     }
 }
