@@ -20,12 +20,12 @@ contract UserDB is IdUtils, Ownable {
     error UserIsBanned();
     error UserDoesNotExist();
     error UsernameIsEmpty();
-    error UserAddressIsEmpty();
+    error AddressIsEmpty();
 
     struct User {
         string Username;
         string MetadataURI;
-        address UserAddress;
+        address Address;
         uint256[] PurchasedSongIds;
         uint256 Balance;
         bool IsBanned;
@@ -58,7 +58,7 @@ contract UserDB is IdUtils, Ownable {
         users[idAssigned] = User({
             Username: username,
             MetadataURI: metadataURI,
-            UserAddress: userAddress,
+            Address: userAddress,
             PurchasedSongIds: new uint256[](0),
             Balance: 0,
             IsBanned: false
@@ -82,13 +82,13 @@ contract UserDB is IdUtils, Ownable {
 
     function changeAddress(
         uint256 id,
-        address newUserAddress
+        address newAddress
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
-        if (newUserAddress == address(0)) revert UserAddressIsEmpty();
+        if (newAddress == address(0)) revert AddressIsEmpty();
 
-        addressUser[users[id].UserAddress] = 0;
-        users[id].UserAddress = newUserAddress;
-        addressUser[newUserAddress] = id;
+        addressUser[users[id].Address] = 0;
+        users[id].Address = newAddress;
+        addressUser[newAddress] = id;
     }
 
     function addSong(
@@ -205,7 +205,7 @@ contract UserDB is IdUtils, Ownable {
     }
 
     function getAddress(uint256 id) external view returns (address) {
-        return users[id].UserAddress;
+        return users[id].Address;
     }
 
     function getId(address userAddress) external view returns (uint256) {
