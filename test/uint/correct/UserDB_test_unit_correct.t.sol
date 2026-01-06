@@ -44,7 +44,7 @@ contract UserDB_test_unit_correct is Constants {
             userDB.getMetadata(assignedId).Balance,
             0,
             "Balance should be initialized to 0"
-        ); 
+        );
     }
 
     function test_unit_correct_UserDB__changeBasicData() public {
@@ -112,8 +112,7 @@ contract UserDB_test_unit_correct is Constants {
         userDB.addSong(assignedId, 101);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB
-            .getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -121,7 +120,6 @@ contract UserDB_test_unit_correct is Constants {
             "Purchased song IDs array should have one entry"
         );
     }
-
 
     function test_unit_correct_UserDB__deleteSong() public {
         uint256[] memory songsBefore = new uint256[](10);
@@ -138,7 +136,7 @@ contract UserDB_test_unit_correct is Constants {
         songsAfter[6] = 107;
         songsAfter[7] = 108;
         songsAfter[8] = 109;
-        
+
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = userDB.register(
             "User Name",
@@ -149,8 +147,7 @@ contract UserDB_test_unit_correct is Constants {
         userDB.deleteSong(assignedId, 104);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB
-            .getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -158,7 +155,6 @@ contract UserDB_test_unit_correct is Constants {
             "Purchased song IDs array should have the correct entries after removal"
         );
     }
-
 
     function test_unit_correct_UserDB__addSongs() public {
         uint256[] memory songsBefore = new uint256[](10);
@@ -174,8 +170,7 @@ contract UserDB_test_unit_correct is Constants {
         userDB.addSongs(assignedId, songsBefore);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB
-            .getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -204,7 +199,7 @@ contract UserDB_test_unit_correct is Constants {
         uint256[] memory songsToDelete = new uint256[](2);
         songsToDelete[0] = 104;
         songsToDelete[1] = 108;
-        
+
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = userDB.register(
             "User Name",
@@ -215,8 +210,7 @@ contract UserDB_test_unit_correct is Constants {
         userDB.deleteSongs(assignedId, songsToDelete);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB
-            .getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -264,7 +258,19 @@ contract UserDB_test_unit_correct is Constants {
         );
     }
 
+    function test_unit_correct_UserDB__setBannedStatus() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.setBannedStatus(assignedId, true);
+        vm.stopPrank();
 
-
-
+        assertTrue(
+            userDB.getMetadata(assignedId).IsBanned,
+            "User should be marked as banned"
+        );
+    }
 }
