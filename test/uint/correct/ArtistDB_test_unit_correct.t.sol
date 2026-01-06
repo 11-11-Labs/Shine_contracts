@@ -94,7 +94,6 @@ contract ArtistDB_test_unit_correct is Constants {
         );
     }
 
-
     function test_unit_correct_ArtistDB__addBalance() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
@@ -162,6 +161,22 @@ contract ArtistDB_test_unit_correct is Constants {
             artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             500,
             "Accumulated royalties should be updated correctly"
+        );
+    }
+
+    function test_unit_correct_ArtistDB__setBannedStatus() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = artistDB.register(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        artistDB.setBannedStatus(assignedId, true);
+        vm.stopPrank();
+
+        assertTrue(
+            artistDB.getMetadata(assignedId).isBanned,
+            "Artist should be marked as banned"
         );
     }
 }
