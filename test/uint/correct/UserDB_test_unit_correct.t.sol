@@ -21,27 +21,27 @@ contract UserDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1 for the first user");
         assertEq(
-            userDB.getMetadata(assignedId).username,
+            userDB.getMetadata(assignedId).Username,
             "User Name",
             "Username should match the registered name"
         );
         assertEq(
-            userDB.getMetadata(assignedId).metadataURI,
+            userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match the registered URI"
         );
         assertEq(
-            userDB.getMetadata(assignedId).userAddress,
+            userDB.getMetadata(assignedId).Address,
             USER.Address,
             "User address should match the registered address"
         );
         assertEq(
-            userDB.getMetadata(assignedId).purchasedSongIds.length,
+            userDB.getMetadata(assignedId).PurchasedSongIds.length,
             0,
             "Purchased song IDs should be initialized to an empty array"
         );
         assertEq(
-            userDB.getMetadata(assignedId).balance,
+            userDB.getMetadata(assignedId).Balance,
             0,
             "Balance should be initialized to 0"
         ); 
@@ -62,12 +62,12 @@ contract UserDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).username,
+            userDB.getMetadata(assignedId).Username,
             "New User Name",
             "Username should be updated correctly"
         );
         assertEq(
-            userDB.getMetadata(assignedId).metadataURI,
+            userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated correctly"
         );
@@ -84,7 +84,7 @@ contract UserDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).userAddress,
+            userDB.getMetadata(assignedId).Address,
             address(67),
             "User address should be updated correctly"
         );

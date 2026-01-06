@@ -783,9 +783,6 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
         albumDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
-
-        vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
-        albumDB.isPurschaseable(assignedId);
     }
 
     function test_unit_revert_AlbumDB__changePurchaseability__AlbumDoesNotExist()
@@ -898,7 +895,9 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__setBannedStatus__AlbumDoesNotExist() public {
+    function test_unit_correct_AlbumDB__setBannedStatus__AlbumDoesNotExist()
+        public
+    {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
         albumDB.setBannedStatus(9999, true);

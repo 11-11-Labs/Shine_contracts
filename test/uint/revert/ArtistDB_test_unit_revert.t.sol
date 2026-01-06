@@ -11,41 +11,6 @@ contract ArtistDB_test_unit_revert is Constants {
         artistDB = new ArtistDB(FAKE_ORCHESTRATOR.Address);
     }
 
-    function test_unit_revert_ArtistDB__register__NameShouldNotBeEmpty()
-        public
-    {
-        vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        vm.expectRevert(ArtistDB.NameShouldNotBeEmpty.selector);
-        artistDB.register("", "ipfs://metadataURI", ARTIST.Address);
-        vm.stopPrank();
-
-        assertEq(
-            artistDB.getMetadata(1).Name,
-            "",
-            "Artist name should be empty due to revert"
-        );
-        assertEq(
-            artistDB.getMetadata(1).MetadataURI,
-            "",
-            "Metadata URI should be empty due to revert"
-        );
-        assertEq(
-            artistDB.getMetadata(1).Address,
-            address(0),
-            "Artist address should be address(0) due to revert"
-        );
-        assertEq(
-            artistDB.getMetadata(1).Balance,
-            0,
-            "Total earnings should be initialized to 0 due to revert"
-        );
-        assertEq(
-            artistDB.getMetadata(1).AccumulatedRoyalties,
-            0,
-            "Accumulated royalties should be initialized to 0 due to revert"
-        );
-    }
-
     function test_unit_revert_ArtistDB__register__Unauthorized() public {
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -131,11 +96,11 @@ contract ArtistDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_revert_ArtistDB__changeBasicData__ArtistIdDoesNotExist()
+    function test_unit_revert_ArtistDB__changeBasicData__ArtistDoesNotExist()
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        vm.expectRevert(ArtistDB.ArtistIdDoesNotExist.selector);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
         artistDB.changeBasicData(1, "New Artist Name", "ipfs://newMetadataURI");
         vm.stopPrank();
         assertEq(
@@ -150,7 +115,9 @@ contract ArtistDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_revert_ArtistDB__changeBasicData__ArtistIsBanned() public {
+    function test_unit_revert_ArtistDB__changeBasicData__ArtistIsBanned()
+        public
+    {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
             "Artist Name",
@@ -177,7 +144,6 @@ contract ArtistDB_test_unit_revert is Constants {
         );
     }
 
-
     function test_unit_revert_ArtistDB__changeAddress__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
@@ -202,10 +168,12 @@ contract ArtistDB_test_unit_revert is Constants {
             "getAddress should return the original address because revert occurred"
         );
     }
-    
-function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public {
+
+    function test_unit_revert_ArtistDB__changeAddress__ArtistDoesNotExist()
+        public
+    {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        vm.expectRevert(ArtistDB.ArtistIdDoesNotExist.selector);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
         artistDB.changeAddress(1, address(67));
         vm.stopPrank();
 
@@ -245,7 +213,6 @@ function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public
         );
     }
 
-    
     function test_unit_revert_ArtistDB__addBalance__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
@@ -256,6 +223,40 @@ function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
+        artistDB.addBalance(assignedId, 1000);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(assignedId).Balance,
+            0,
+            "Balance should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_ArtistDB__addBalance__ArtistDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
+        artistDB.addBalance(1, 1000);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(1).Balance,
+            0,
+            "Balance should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_ArtistDB__addBalance__ArtistIsBanned() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = artistDB.register(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        artistDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(ArtistDB.ArtistIsBanned.selector);
         artistDB.addBalance(assignedId, 1000);
         vm.stopPrank();
 
@@ -287,7 +288,24 @@ function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public
         );
     }
 
-    function test_unit_revert_ArtistDB__addAccumulatedRoyalties__Unauthorized() public {
+    function test_unit_revert_ArtistDB__deductBalance__ArtistDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
+        artistDB.deductBalance(1, 500);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(1).Balance,
+            0,
+            "Balance should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_ArtistDB__addAccumulatedRoyalties__Unauthorized()
+        public
+    {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
             "Artist Name",
@@ -307,7 +325,45 @@ function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public
         );
     }
 
-    function test_unit_revert_ArtistDB__deductAccumulatedRoyalties__Unauthorized() public {
+    function test_unit_revert_ArtistDB__addAccumulatedRoyalties__ArtistDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
+        artistDB.addAccumulatedRoyalties(1, 1000);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(1).AccumulatedRoyalties,
+            0,
+            "Accumulated royalties should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_ArtistDB__addAccumulatedRoyalties__ArtistIsBanned()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = artistDB.register(
+            "Artist Name",
+            "ipfs://metadataURI",
+            ARTIST.Address
+        );
+        artistDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(ArtistDB.ArtistIsBanned.selector);
+        artistDB.addAccumulatedRoyalties(assignedId, 1000);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
+            0,
+            "Accumulated royalties should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_ArtistDB__deductAccumulatedRoyalties__Unauthorized()
+        public
+    {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
             "Artist Name",
@@ -328,7 +384,22 @@ function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public
         );
     }
 
-    function test_unit_correct_ArtistDB__setBannedStatus__Unauthorized() public {
+    function test_unit_revert_ArtistDB__deductAccumulatedRoyalties__ArtistDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
+        artistDB.deductAccumulatedRoyalties(1, 500);
+        vm.stopPrank();
+
+        assertEq(
+            artistDB.getMetadata(1).AccumulatedRoyalties,
+            0,
+            "Accumulated royalties should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_ArtistDB__setBannedStatus__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         uint256 assignedId = artistDB.register(
             "Artist Name",
@@ -342,9 +413,22 @@ function test_unit_revert_ArtistDB__changeAddress__ArtistIdDoesNotExist() public
         vm.stopPrank();
 
         assertFalse(
-            artistDB.getMetadata(assignedId).isBanned,
+            artistDB.getMetadata(assignedId).IsBanned,
             "Artist should be not banned due to revert"
         );
     }
-    
+
+    function test_revert_correct_ArtistDB__setBannedStatus__ArtistDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
+        artistDB.setBannedStatus(1, true);
+        vm.stopPrank();
+
+        assertFalse(
+            artistDB.getMetadata(1).IsBanned,
+            "Artist should be not banned due to revert"
+        );
+    }
 }

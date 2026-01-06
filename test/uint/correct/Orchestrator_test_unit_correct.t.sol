@@ -139,17 +139,17 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
         assertEq(assignedId, 1, "Assigned ID should be 1 for the first user");
         assertEq(
-            userDB.getMetadata(assignedId).username,
+            userDB.getMetadata(assignedId).Username,
             "Username",
             "Username should match the registered username"
         );
         assertEq(
-            userDB.getMetadata(assignedId).metadataURI,
+            userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match the registered URI"
         );
         assertEq(
-            userDB.getMetadata(assignedId).userAddress,
+            userDB.getMetadata(assignedId).Address,
             USER.Address,
             "User address should match the registered address"
         );
@@ -173,17 +173,17 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).username,
+            userDB.getMetadata(assignedId).Username,
             "New Username",
             "Username should be updated to the new username"
         );
         assertEq(
-            userDB.getMetadata(assignedId).metadataURI,
+            userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated to the new URI"
         );
         assertEq(
-            userDB.getMetadata(assignedId).userAddress,
+            userDB.getMetadata(assignedId).Address,
             USER.Address,
             "User address should remain unchanged"
         );
@@ -207,17 +207,17 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).username,
+            userDB.getMetadata(assignedId).Username,
             "New Username",
             "Username should be updated to the new username"
         );
         assertEq(
-            userDB.getMetadata(assignedId).metadataURI,
+            userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated to the new URI"
         );
         assertEq(
-            userDB.getMetadata(assignedId).userAddress,
+            userDB.getMetadata(assignedId).Address,
             address(89),
             "User address should be updated to the new address"
         );
@@ -251,31 +251,31 @@ contract Orchestrator_test_unit_correct is Constants {
 
         assertEq(songId, 1, "Assigned ID should be 1 for the first song");
         assertEq(
-            songDB.getMetadata(songId).title,
+            songDB.getMetadata(songId).Title,
             "Song Title",
             "Song title should match the registered title"
         );
         assertEq(
             artistIDs,
-            songDB.getMetadata(songId).artistIDs,
+            songDB.getMetadata(songId).ArtistIDs,
             "Artist IDs should match the registered artist IDs"
         );
         assertEq(
-            songDB.getMetadata(songId).mediaURI,
+            songDB.getMetadata(songId).MediaURI,
             "ipfs://songMediaURI",
             "Media URI should match the registered URI"
         );
         assertEq(
-            songDB.getMetadata(songId).metadataURI,
+            songDB.getMetadata(songId).MetadataURI,
             "ipfs://songMetadataURI",
             "Metadata URI should match the registered URI"
         );
         assertFalse(
-            songDB.getMetadata(songId).canBePurchased,
+            songDB.getMetadata(songId).CanBePurchased,
             "Song should be not purchasable"
         );
         assertEq(
-            songDB.getMetadata(songId).price,
+            songDB.getMetadata(songId).Price,
             180,
             "Price should match the registered price"
         );
@@ -321,31 +321,31 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            songDB.getMetadata(songId).title,
+            songDB.getMetadata(songId).Title,
             "New Song Title",
             "Song title should be updated to the new title"
         );
         assertEq(
             artistIDsNew,
-            songDB.getMetadata(songId).artistIDs,
+            songDB.getMetadata(songId).ArtistIDs,
             "Artist IDs should be updated to the new artist IDs"
         );
         assertEq(
-            songDB.getMetadata(songId).mediaURI,
+            songDB.getMetadata(songId).MediaURI,
             "ipfs://newSongMediaURI",
             "Media URI should be updated to the new URI"
         );
         assertEq(
-            songDB.getMetadata(songId).metadataURI,
+            songDB.getMetadata(songId).MetadataURI,
             "ipfs://newSongMetadataURI",
             "Metadata URI should be updated to the new URI"
         );
         assertTrue(
-            songDB.getMetadata(songId).canBePurchased,
+            songDB.getMetadata(songId).CanBePurchased,
             "Song should be purchasable after update"
         );
         assertEq(
-            songDB.getMetadata(songId).price,
+            songDB.getMetadata(songId).Price,
             250,
             "Price should be updated to the new price"
         );
@@ -386,11 +386,11 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertTrue(
-            songDB.getMetadata(songId).canBePurchased,
+            songDB.getMetadata(songId).CanBePurchased,
             "Song should be purchasable after update"
         );
         assertEq(
-            songDB.getMetadata(songId).price,
+            songDB.getMetadata(songId).Price,
             250,
             "Price should be updated to the new price"
         );
@@ -679,7 +679,7 @@ contract Orchestrator_test_unit_correct is Constants {
             "User should have purchased the song"
         );
         assertEq(
-            userDB.getMetadata(userId).balance,
+            userDB.getMetadata(userId).Balance,
             0,
             "User balance should be deducted by the song price"
         );
@@ -691,7 +691,7 @@ contract Orchestrator_test_unit_correct is Constants {
         uint256[] memory purchasedSongs = new uint256[](1);
         purchasedSongs[0] = songId;
         assertEq(
-            userDB.getMetadata(userId).purchasedSongIds,
+            userDB.getMetadata(userId).PurchasedSongIds,
             purchasedSongs,
             "Song ID should be added to the user's purchased songs"
         );
@@ -746,7 +746,7 @@ contract Orchestrator_test_unit_correct is Constants {
             "User should have purchased the album"
         );
         assertEq(
-            userDB.getMetadata(userId).balance,
+            userDB.getMetadata(userId).Balance,
             500,
             "User balance should be deducted by the album price"
         );
@@ -758,7 +758,7 @@ contract Orchestrator_test_unit_correct is Constants {
         uint256[] memory purchasedSongs = new uint256[](1);
         purchasedSongs[0] = songId;
         assertEq(
-            userDB.getMetadata(userId).purchasedSongIds,
+            userDB.getMetadata(userId).PurchasedSongIds,
             purchasedSongs,
             "All song IDs from the album should be added to the user's purchased songs"
         );
@@ -776,7 +776,7 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(userId).balance,
+            userDB.getMetadata(userId).Balance,
             1000,
             "User balance should be increased by the added amount"
         );
@@ -795,7 +795,7 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(userId).balance,
+            userDB.getMetadata(userId).Balance,
             500,
             "User balance should be decreased by the deducted amount"
         );

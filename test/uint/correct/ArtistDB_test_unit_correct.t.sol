@@ -175,7 +175,7 @@ contract ArtistDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertTrue(
-            artistDB.getMetadata(assignedId).isBanned,
+            artistDB.getMetadata(assignedId).IsBanned,
             "Artist should be marked as banned"
         );
     }
