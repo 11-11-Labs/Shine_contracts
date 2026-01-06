@@ -217,10 +217,7 @@ contract UserDB_test_unit_revert is Constants {
         );
     }
 
-    /*
-    
-
-    function test_unit_revert_UserDB__deleteSong() public {
+    function test_unit_revert_UserDB__deleteSong__Unauthorized() public {
         uint256[] memory songsBefore = new uint256[](10);
         for (uint256 i = 0; i < 10; i++) {
             songsBefore[i] = i + 100;
@@ -243,6 +240,9 @@ contract UserDB_test_unit_revert is Constants {
             USER.Address
         );
         userDB.addSongs(assignedId, songsBefore);
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
         userDB.deleteSong(assignedId, 104);
         vm.stopPrank();
 
@@ -250,12 +250,67 @@ contract UserDB_test_unit_revert is Constants {
 
         assertEq(
             purchasedSongs,
-            songsAfter,
-            "Purchased song IDs array should have the correct entries after removal"
+            songsBefore,
+            "Purchased song IDs should be unchanged after revert"
         );
     }
 
-    function test_unit_revert_UserDB__addSongs() public {
+    function test_unit_revert_UserDB__deleteSong__UserDoesNotExist() public {
+        uint256[] memory songsAfter = new uint256[](9);
+        songsAfter[0] = 100;
+        songsAfter[1] = 101;
+        songsAfter[2] = 102;
+        songsAfter[3] = 103;
+        songsAfter[4] = 105;
+        songsAfter[5] = 106;
+        songsAfter[6] = 107;
+        songsAfter[7] = 108;
+        songsAfter[8] = 109;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(UserDB.UserDoesNotExist.selector);
+        userDB.deleteSong(1, 104);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_UserDB__deleteSong__UserIsBanned() public {
+        uint256[] memory songsBefore = new uint256[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            songsBefore[i] = i + 100;
+        }
+        uint256[] memory songsAfter = new uint256[](9);
+        songsAfter[0] = 100;
+        songsAfter[1] = 101;
+        songsAfter[2] = 102;
+        songsAfter[3] = 103;
+        songsAfter[4] = 105;
+        songsAfter[5] = 106;
+        songsAfter[6] = 107;
+        songsAfter[7] = 108;
+        songsAfter[8] = 109;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.addSongs(assignedId, songsBefore);
+        userDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(UserDB.UserIsBanned.selector);
+        userDB.deleteSong(assignedId, 104);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+
+        assertEq(
+            purchasedSongs,
+            songsBefore,
+            "Purchased song IDs should be unchanged after revert"
+        );
+    }
+
+    function test_unit_revert_UserDB__addSongs__Unauthorized() public {
         uint256[] memory songsBefore = new uint256[](10);
         for (uint256 i = 0; i < 10; i++) {
             songsBefore[i] = i + 100;
@@ -266,17 +321,65 @@ contract UserDB_test_unit_revert is Constants {
             "ipfs://metadataURI",
             USER.Address
         );
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
         userDB.addSongs(assignedId, songsBefore);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
-
         assertEq(
-            purchasedSongs,
-            songsBefore,
-            "Purchased song IDs array should have all added entries"
+            userDB.getPurchasedSong(assignedId).length,
+            0,
+            "Purchased song IDs array should be empty after revert"
         );
     }
+
+    function test_unit_revert_UserDB__addSongs__UserIsBanned() public {
+        uint256[] memory songsBefore = new uint256[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            songsBefore[i] = i + 100;
+        }
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = userDB.register(
+            "User Name",
+            "ipfs://metadataURI",
+            USER.Address
+        );
+        userDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(UserDB.UserIsBanned.selector);
+        userDB.addSongs(assignedId, songsBefore);
+        vm.stopPrank();
+
+        assertEq(
+            userDB.getPurchasedSong(assignedId).length,
+            0,
+            "Purchased song IDs array should be empty after revert"
+        );
+    }
+
+    function test_unit_revert_UserDB__addSongs__UserDoesNotExist() public {
+        uint256[] memory songsBefore = new uint256[](10);
+        for (uint256 i = 0; i < 10; i++) {
+            songsBefore[i] = i + 100;
+        }
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(UserDB.UserDoesNotExist.selector);
+        userDB.addSongs(1, songsBefore);
+        vm.stopPrank();
+
+        assertEq(
+            userDB.getPurchasedSong(1).length,
+            0,
+            "Purchased song IDs array should be empty after revert"
+        );
+    }
+
+    /*
+    
+
+    
+
+    
 
     function test_unit_revert_UserDB__deleteSongs() public {
         uint256[] memory songsBefore = new uint256[](10);
