@@ -7,26 +7,54 @@ pragma solidity ^0.8.20;
  _\ `./ ` / / || / _/  イ
 /___,/_n_/_/_/|_/___/  ヌ
                       
-                                                            
- * @title Shine SongDB
+ * @title Shine AlbumDB
  * @author 11:11 Labs 
- * @notice This contract manages song metadata, user purchases, 
- *         and admin functionalities for the Shine platform.
+ * @notice This contract serves as a database for storing and managing album metadata,
+ *         including purchases, refunds, special editions, and administrative controls
+ *         for the Shine music platform.
+ * @dev Inherits from IdUtils for unique ID generation and Ownable for access control.
+ *      Only the Orchestrator contract (owner) can modify state.
  */
 
 import {IdUtils} from "@shine/library/IdUtils.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract AlbumDB is IdUtils, Ownable {
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /// @dev Thrown when attempting to access an album that does not exist
     error AlbumDoesNotExist();
+    /// @dev Thrown when a user tries to purchase an album they already own
     error UserBoughtAlbum();
+    /// @dev Thrown when attempting to purchase an album that is not available for sale
     error AlbumNotPurchasable();
+    /// @dev Thrown when attempting to interact with a banned album
     error AlbumIsBanned();
+    /// @dev Thrown when trying to purchase a special edition but the album is not a special edition
     error AlbumNotSpecialEdition();
+    /// @dev Thrown when the special edition max supply has been reached
     error AlbumMaxSupplyReached();
+    /// @dev Thrown when trying to refund an album the user has not purchased
     error UserNotBoughtAlbum();
+    /// @dev Thrown when trying to create or update an album with zero songs
     error AlbumCannotHaveZeroSongs();
+    
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Stores all metadata associated with an album
+     * @dev Used to track album information, pricing, purchase status, and special editions
+     * @param Title The display name of the album
+     * @param PrincipalArtistId The unique identifier of the main artist
+     * @param MetadataURI URI pointing to off-chain metadata (e.g., IPFS)
+     * @param MusicIds Array of song IDs included in this album
+     * @param Price The cost to purchase this album (in wei or token units)
+     * @param TimesBought Counter tracking total number of purchases
+     * @param CanBePurchased Flag indicating if the album is available for sale
+     * @param IsASpecialEdition Flag indicating if this is a limited special edition
+     * @param SpecialEditionName Name identifier for the special edition
+     * @param MaxSupplySpecialEdition Maximum copies available for special editions
+     * @param IsBanned Flag indicating if the album has been banned from the platform
+     */
     struct SongMetadata {
         string Title;
         uint256 PrincipalArtistId;
@@ -41,23 +69,61 @@ contract AlbumDB is IdUtils, Ownable {
         bool IsBanned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /// @notice Tracks whether a user has purchased a specific album
+    /// @dev Mapping: albumId => userId => hasPurchased
     mapping(uint256 Id => mapping(uint256 userId => bool)) isBoughtByUserId;
+
+    /// @notice Stores all album metadata indexed by album ID
+    /// @dev Private mapping to prevent direct external access
     mapping(uint256 Id => SongMetadata) private albums;
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Ensures the album exists before executing the function
+     * @dev Reverts with AlbumDoesNotExist if the album ID is not registered
+     * @param id The album ID to validate
+     */
     modifier onlyIfExist(uint256 id) {
         if (!exists(id)) revert AlbumDoesNotExist();
         _;
     }
 
+    /**
+     * @notice Ensures the album is not banned before executing the function
+     * @dev Reverts with AlbumIsBanned if the album has been banned
+     * @param id The album ID to validate
+     */
     modifier onlyIfNotBanned(uint256 id) {
         if (albums[id].IsBanned) revert AlbumIsBanned();
         _;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Constructor 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Initializes the AlbumDB contract
+     * @dev Sets the Orchestrator contract as the owner for access control
+     * @param _orchestratorAddress Address of the Orchestrator contract that will manage this database
+     */
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Registers a new album in the database
+     * @dev Only callable by the Orchestrator (owner). Assigns a unique ID automatically.
+     * @param title The display name of the album
+     * @param principalArtistId The unique ID of the main artist
+     * @param metadataURI URI pointing to off-chain metadata (e.g., IPFS hash)
+     * @param songIDs Array of song IDs included in this album
+     * @param price The purchase price for this album
+     * @param canBePurchased Whether the album is available for purchase
+     * @param isASpecialEdition Whether this is a limited special edition
+     * @param specialEditionName Name for the special edition (if applicable)
+     * @param maxSupplySpecialEdition Maximum copies for special edition (0 if not special)
+     * @return The newly assigned album ID
+     */
     function register(
         string memory title,
         uint256 principalArtistId,
@@ -88,6 +154,14 @@ contract AlbumDB is IdUtils, Ownable {
         return idAssigned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Processes a standard album purchase for a user
+     * @dev Only callable by owner. Reverts if user already owns it or album is not purchasable/banned.
+     * @param id The album ID to purchase
+     * @param userId The unique identifier of the purchasing user
+     * @return Array of song IDs included in the purchased album
+     */
     function purchase(
         uint256 id,
         uint256 userId
@@ -108,6 +182,13 @@ contract AlbumDB is IdUtils, Ownable {
         return albums[id].MusicIds;
     }
 
+    /**
+     * @notice Processes a special edition album purchase for a user
+     * @dev Only callable by owner. Additional checks for special edition status and max supply.
+     * @param id The album ID to purchase
+     * @param userId The unique identifier of the purchasing user
+     * @return Array of song IDs included in the purchased album
+     */
     function purchaseSpecialEdition(
         uint256 id,
         uint256 userId
@@ -132,6 +213,14 @@ contract AlbumDB is IdUtils, Ownable {
         return albums[id].MusicIds;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Refunds 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Processes a refund for a previously purchased album
+     * @dev Only callable by owner. Reverts if user hasn't purchased the album.
+     * @param id The album ID to refund
+     * @param userId The unique identifier of the user requesting refund
+     * @return Tuple containing (array of song IDs, refund price amount)
+     */
     function refund(
         uint256 id,
         uint256 userId
@@ -144,6 +233,21 @@ contract AlbumDB is IdUtils, Ownable {
         return (albums[id].MusicIds, albums[id].Price);
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Metadata Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Updates all metadata fields for an existing album
+     * @dev Only callable by owner. Preserves TimesBought and IsBanned status. Reverts if musicIds is empty.
+     * @param id The album ID to update
+     * @param title New display name for the album
+     * @param principalArtistId New principal artist ID
+     * @param metadataURI New URI for off-chain metadata
+     * @param musicIds New array of song IDs (cannot be empty)
+     * @param price New purchase price
+     * @param canBePurchased New purchasability status
+     * @param isASpecialEdition New special edition status
+     * @param specialEditionName New special edition name
+     * @param maxSupplySpecialEdition New max supply for special edition
+     */
     function change(
         uint256 id,
         string memory title,
@@ -173,6 +277,12 @@ contract AlbumDB is IdUtils, Ownable {
         });
     }
 
+    /**
+     * @notice Updates the purchasability status of an album
+     * @dev Only callable by owner. Cannot modify banned albums.
+     * @param id The album ID to update
+     * @param canBePurchased New purchasability status (true = available for sale)
+     */
     function changePurchaseability(
         uint256 id,
         bool canBePurchased
@@ -180,6 +290,12 @@ contract AlbumDB is IdUtils, Ownable {
         albums[id].CanBePurchased = canBePurchased;
     }
 
+    /**
+     * @notice Updates the price of an album
+     * @dev Only callable by owner. Cannot modify banned albums.
+     * @param id The album ID to update
+     * @param price New purchase price for the album
+     */
     function changePrice(
         uint256 id,
         uint256 price
@@ -187,6 +303,12 @@ contract AlbumDB is IdUtils, Ownable {
         albums[id].Price = price;
     }
 
+    /**
+     * @notice Sets the banned status of an album
+     * @dev Only callable by owner. Banned albums cannot be purchased or modified.
+     * @param id The album ID to update
+     * @param isBanned New banned status (true = banned from platform)
+     */
     function setBannedStatus(
         uint256 id,
         bool isBanned
@@ -194,6 +316,14 @@ contract AlbumDB is IdUtils, Ownable {
         albums[id].IsBanned = isBanned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Checks if a user has already purchased an album
+     * @dev Returns true if the user has bought the album (useful before attempting purchase)
+     * @param id The album ID to check
+     * @param userId The user ID to check
+     * @return True if the user has purchased the album, false otherwise
+     */
     function canUserBuy(
         uint256 id,
         uint256 userId
@@ -201,14 +331,30 @@ contract AlbumDB is IdUtils, Ownable {
         return isBoughtByUserId[id][userId];
     }
 
+    /**
+     * @notice Gets the current price of an album
+     * @param id The album ID to query
+     * @return The price of the album in wei or token units
+     */
     function getPrice(uint256 id) external view returns (uint256) {
         return albums[id].Price;
     }
 
+    /**
+     * @notice Checks if an album is available for purchase
+     * @param id The album ID to query
+     * @return True if the album can be purchased, false otherwise
+     */
     function isPurchasable(uint256 id) external view returns (bool) {
         return albums[id].CanBePurchased;
     }
 
+    /**
+     * @notice Checks if a user has purchased a specific album
+     * @param id The album ID to check
+     * @param userId The user ID to check
+     * @return True if the user has purchased the album, false otherwise
+     */
     function hasUserPurchased(
         uint256 id,
         uint256 userId
@@ -216,17 +362,59 @@ contract AlbumDB is IdUtils, Ownable {
         return isBoughtByUserId[id][userId];
     }
 
+    /**
+     * @notice Gets the principal artist ID for an album
+     * @param id The album ID to query
+     * @return The unique identifier of the principal artist
+     */
     function getPrincipalArtistId(uint256 id) external view returns (uint256) {
         return albums[id].PrincipalArtistId;
     }
 
+    /**
+     * @notice Checks if an album is banned from the platform
+     * @param id The album ID to query
+     * @return True if the album is banned, false otherwise
+     */
     function checkIsBanned(uint256 id) external view returns (bool) {
         return albums[id].IsBanned;
     }
 
+    /**
+     * @notice Retrieves all metadata for an album
+     * @param id The album ID to query
+     * @return Complete SongMetadata struct with all album information
+     */
     function getMetadata(
         uint256 id
     ) external view returns (SongMetadata memory) {
         return albums[id];
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /*
+🮋🮋 Made with ❤️ by 11:11 Labs 🮋🮋
+⢕⢕⢕⢕⠁⢜⠕⢁⣴⣿⡇⢓⢕⢵⢐⢕⢕⠕⢁⣾⢿⣧⠑⢕⢕⠄⢑⢕⠅⢕
+⢕⢕⠵⢁⠔⢁⣤⣤⣶⣶⣶⡐⣕⢽⠐⢕⠕⣡⣾⣶⣶⣶⣤⡁⢓⢕⠄⢑⢅⢑
+⠍⣧⠄⣶⣾⣿⣿⣿⣿⣿⣿⣷⣔⢕⢄⢡⣾⣿⣿⣿⣿⣿⣿⣿⣦⡑⢕⢤⠱⢐
+⢠⢕⠅⣾⣿⠋⢿⣿⣿⣿⠉⣿⣿⣷⣦⣶⣽⣿⣿⠈⣿⣿⣿⣿⠏⢹⣷⣷⡅⢐
+⣔⢕⢥⢻⣿⡀⠈⠛⠛⠁⢠⣿⣿⣿⣿⣿⣿⣿⣿⡀⠈⠛⠛⠁⠄⣼⣿⣿⡇⢔
+⢕⢕⢽⢸⢟⢟⢖⢖⢤⣶⡟⢻⣿⡿⠻⣿⣿⡟⢀⣿⣦⢤⢤⢔⢞⢿⢿⣿⠁⢕
+⢕⢕⠅⣐⢕⢕⢕⢕⢕⣿⣿⡄⠛⢀⣦⠈⠛⢁⣼⣿⢗⢕⢕⢕⢕⢕⢕⡏⣘⢕
+⢕⢕⠅⢓⣕⣕⣕⣕⣵⣿⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣷⣕⢕⢕⢕⢕⡵⢀⢕⢕
+⢑⢕⠃⡈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢃⢕⢕⢕
+⣆⢕⠄⢱⣄⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⢁⢕⢕⠕⢁
+ */
+
