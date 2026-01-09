@@ -7,20 +7,38 @@ pragma solidity ^0.8.20;
  _\ `./ ` / / || / _/  イ
 /___,/_n_/_/_/|_/___/  ヌ
                       
-                                                            
- * @title Shine ArtistDB Contract
+ * @title Shine UserDB
  * @author 11:11 Labs 
- * @notice This contract manages artist registrations and their associated data.
+ * @notice This contract serves as a database for storing and managing user profiles and data,
+ *         including user registration, purchase history, balance tracking, and profile management
+ *         for the Shine music platform.
+ * @dev Inherits from IdUtils for unique ID generation and Ownable for access control.
+ *      Only the Orchestrator contract (owner) can modify state.
  */
 
 import {IdUtils} from "@shine/library/IdUtils.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract UserDB is IdUtils, Ownable {
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /// @dev Thrown when attempting to interact with a banned user
     error UserIsBanned();
+    /// @dev Thrown when attempting to access a user that does not exist
     error UserDoesNotExist();
+    /// @dev Thrown when trying to set a username to empty string
     error UsernameIsEmpty();
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Stores all metadata associated with a user
+     * @dev Used to track user profile information, purchase history, and account status
+     * @param Username The display name/username of the user
+     * @param MetadataURI URI pointing to off-chain metadata (e.g., IPFS)
+     * @param Address The wallet address associated with this user
+     * @param PurchasedSongIds Array of song IDs purchased by this user
+     * @param Balance Current balance of the user account
+     * @param IsBanned Flag indicating if the user has been banned from the platform
+     */
     struct User {
         string Username;
         string MetadataURI;
@@ -30,23 +48,55 @@ contract UserDB is IdUtils, Ownable {
         bool IsBanned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /// @notice Maps user wallet addresses to their unique IDs
+    /// @dev Provides quick lookup of user ID by their Ethereum address
     mapping(address userAddress => uint256 id) private addressUser;
+
+    /// @notice Stores all user metadata indexed by user ID
+    /// @dev Private mapping to prevent direct external access
     mapping(uint256 Id => User) private users;
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Ensures the user exists before executing the function
+     * @dev Reverts with UserDoesNotExist if the user ID is not registered
+     * @param id The user ID to validate
+     */
     modifier onlyIfExist(uint256 id) {
         if (!exists(id)) revert UserDoesNotExist();
         _;
     }
 
+    /**
+     * @notice Ensures the user is not banned before executing the function
+     * @dev Reverts with UserIsBanned if the user has been banned
+     * @param id The user ID to validate
+     */
     modifier onlyIfNotBanned(uint256 id) {
         if (users[id].IsBanned) revert UserIsBanned();
         _;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Constructor 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Initializes the UserDB contract
+     * @dev Sets the Orchestrator contract as the owner for access control
+     * @param _orchestratorAddress Address of the Orchestrator contract that will manage this database
+     */
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Registers a new user in the database
+     * @dev Only callable by the Orchestrator (owner). Assigns a unique ID automatically.
+     * @param username The display username of the user
+     * @param metadataURI URI pointing to off-chain metadata (e.g., IPFS hash)
+     * @param userAddress The wallet address of the user
+     * @return The newly assigned user ID
+     */
     function register(
         string memory username,
         string memory metadataURI,
@@ -68,6 +118,14 @@ contract UserDB is IdUtils, Ownable {
         return idAssigned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Admin Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Updates basic user information (username and metadata)
+     * @dev Only callable by owner. Cannot modify banned users. Username cannot be empty.
+     * @param id The user ID to update
+     * @param username New display username for the user
+     * @param metadataURI New URI for off-chain metadata
+     */
     function changeBasicData(
         uint256 id,
         string memory username,
@@ -79,6 +137,12 @@ contract UserDB is IdUtils, Ownable {
         users[id].MetadataURI = metadataURI;
     }
 
+    /**
+     * @notice Updates the wallet address associated with a user
+     * @dev Only callable by owner. Updates both direction mappings.
+     * @param id The user ID to update
+     * @param newAddress New wallet address for the user
+     */
     function changeAddress(
         uint256 id,
         address newAddress
@@ -88,6 +152,12 @@ contract UserDB is IdUtils, Ownable {
         addressUser[newAddress] = id;
     }
 
+    /**
+     * @notice Adds a single song to a user's purchase history
+     * @dev Only callable by owner. Cannot be called on banned users.
+     * @param userId The user ID to update
+     * @param songId The song ID to add to purchases
+     */
     function addSong(
         uint256 userId,
         uint256 songId
@@ -95,6 +165,12 @@ contract UserDB is IdUtils, Ownable {
         users[userId].PurchasedSongIds.push(songId);
     }
 
+    /**
+     * @notice Removes a single song from a user's purchase history
+     * @dev Only callable by owner. Uses optimized removal algorithm.
+     * @param userId The user ID to update
+     * @param songId The song ID to remove from purchases
+     */
     function deleteSong(
         uint256 userId,
         uint256 songId
@@ -119,6 +195,12 @@ contract UserDB is IdUtils, Ownable {
         }
     }
 
+    /**
+     * @notice Adds multiple songs to a user's purchase history
+     * @dev Only callable by owner. Cannot be called on banned users.
+     * @param userId The user ID to update
+     * @param songIds Array of song IDs to add to purchases
+     */
     function addSongs(
         uint256 userId,
         uint256[] calldata songIds
@@ -132,6 +214,12 @@ contract UserDB is IdUtils, Ownable {
         }
     }
 
+    /**
+     * @notice Removes multiple songs from a user's purchase history
+     * @dev Only callable by owner. Uses optimized removal algorithm.
+     * @param userId The user ID to update
+     * @param songIdsToDelete Array of song IDs to remove from purchases
+     */
     function deleteSongs(
         uint256 userId,
         uint256[] calldata songIdsToDelete
@@ -177,6 +265,12 @@ contract UserDB is IdUtils, Ownable {
         }
     }
 
+    /**
+     * @notice Adds balance to a user account
+     * @dev Only callable by owner. Cannot be called on banned users.
+     * @param userId The user ID to credit
+     * @param amount The amount to add to balance
+     */
     function addBalance(
         uint256 userId,
         uint256 amount
@@ -184,6 +278,12 @@ contract UserDB is IdUtils, Ownable {
         users[userId].Balance += amount;
     }
 
+    /**
+     * @notice Deducts balance from a user account
+     * @dev Only callable by owner. Cannot be called on banned users.
+     * @param userId The user ID to debit
+     * @param amount The amount to deduct from balance
+     */
     function deductBalance(
         uint256 userId,
         uint256 amount
@@ -191,10 +291,12 @@ contract UserDB is IdUtils, Ownable {
         users[userId].Balance -= amount;
     }
 
-    function getMetadata(uint256 id) external view returns (User memory) {
-        return users[id];
-    }
-
+    /**
+     * @notice Sets the banned status of a user
+     * @dev Only callable by owner. Banned users cannot have their data modified.
+     * @param id The user ID to update
+     * @param isBanned New banned status (true = banned from platform)
+     */
     function setBannedStatus(
         uint256 id,
         bool isBanned
@@ -202,21 +304,78 @@ contract UserDB is IdUtils, Ownable {
         users[id].IsBanned = isBanned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Retrieves all metadata for a user
+     * @param id The user ID to query
+     * @return Complete User struct with all information
+     */
+    function getMetadata(uint256 id) external view returns (User memory) {
+        return users[id];
+    }
+
+    /**
+     * @notice Gets the wallet address associated with a user
+     * @param id The user ID to query
+     * @return The user's wallet address
+     */
+    function getAddress(uint256 id) external view returns (address) {
+        return users[id].Address;
+    }
+
+    /**
+     * @notice Gets the user ID for a given wallet address
+     * @param userAddress The user's wallet address
+     * @return The unique identifier of the user
+     */
+    function getId(address userAddress) external view returns (uint256) {
+        return addressUser[userAddress];
+    }
+
+    /**
+     * @notice Gets the current balance of a user
+     * @param userId The user ID to query
+     * @return The user's current balance
+     */
+    function getBalance(uint256 userId) external view returns (uint256) {
+        return users[userId].Balance;
+    }
+
+    /**
+     * @notice Gets all purchased songs for a user
+     * @param userId The user ID to query
+     * @return Array of song IDs purchased by the user
+     */
     function getPurchasedSong(
         uint256 userId
     ) external view returns (uint256[] memory) {
         return users[userId].PurchasedSongIds;
     }
-
-    function getAddress(uint256 id) external view returns (address) {
-        return users[id].Address;
-    }
-
-    function getId(address userAddress) external view returns (uint256) {
-        return addressUser[userAddress];
-    }
-
-    function getBalance(uint256 userId) external view returns (uint256) {
-        return users[userId].Balance;
-    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**********************************
+🮋🮋 Made with ❤️ by 11:11 Labs 🮋🮋
+⢕⢕⢕⢕⠁⢜⠕⢁⣴⣿⡇⢓⢕⢵⢐⢕⢕⠕⢁⣾⢿⣧⠑⢕⢕⠄⢑⢕⠅⢕
+⢕⢕⠵⢁⠔⢁⣤⣤⣶⣶⣶⡐⣕⢽⠐⢕⠕⣡⣾⣶⣶⣶⣤⡁⢓⢕⠄⢑⢅⢑
+⠍⣧⠄⣶⣾⣿⣿⣿⣿⣿⣿⣷⣔⢕⢄⢡⣾⣿⣿⣿⣿⣿⣿⣿⣦⡑⢕⢤⠱⢐
+⢠⢕⠅⣾⣿⠋⢿⣿⣿⣿⠉⣿⣿⣷⣦⣶⣽⣿⣿⠈⣿⣿⣿⣿⠏⢹⣷⣷⡅⢐
+⣔⢕⢥⢻⣿⡀⠈⠛⠛⠁⢠⣿⣿⣿⣿⣿⣿⣿⣿⡀⠈⠛⠛⠁⠄⣼⣿⣿⡇⢔
+⢕⢕⢽⢸⢟⢟⢖⢖⢤⣶⡟⢻⣿⡿⠻⣿⣿⡟⢀⣿⣦⢤⢤⢔⢞⢿⢿⣿⠁⢕
+⢕⢕⠅⣐⢕⢕⢕⢕⢕⣿⣿⡄⠛⢀⣦⠈⠛⢁⣼⣿⢗⢕⢕⢕⢕⢕⢕⡏⣘⢕
+⢕⢕⠅⢓⣕⣕⣕⣕⣵⣿⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣷⣕⢕⢕⢕⢕⡵⢀⢕⢕
+⢑⢕⠃⡈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢃⢕⢕⢕
+⣆⢕⠄⢱⣄⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⢁⢕⢕⠕⢁
+***********************************/
