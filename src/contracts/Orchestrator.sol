@@ -213,18 +213,17 @@ contract Orchestrator is Ownable {
             msg.sender
         ) revert();
 
-        
         ISongDB(dbAddress.song).changePrice(id, price);
     }
 
     function purchaseSong(uint256 songId) external payable {
         uint256 userID = IUserDB(dbAddress.user).getId(msg.sender);
-        if (userID == 0) revert();
         ISongDB(dbAddress.song).purchase(songId, userID);
+        IUserDB(dbAddress.user).addSong(userID, songId);
         _executePayment(
             userID,
             ISongDB(dbAddress.song).getPrincipalArtistId(songId),
-            songId
+            ISongDB(dbAddress.song).getPrice(songId)
         );
 
         emit SongPurchased(
@@ -251,6 +250,10 @@ contract Orchestrator is Ownable {
             msg.sender
         ) revert();
         if (bytes(title).length == 0) revert();
+        if (isASpecialEdition) {
+            if (bytes(specialEditionName).length == 0) revert();
+            if (maxSupplySpecialEdition == 0) revert();
+        }
         for (uint256 i = 0; i < songIDs.length; i++) {
             if (!ISongDB(dbAddress.song).exists(songIDs[i])) revert();
             if (
@@ -258,6 +261,7 @@ contract Orchestrator is Ownable {
                 principalArtistId
             ) revert();
         }
+
         return
             IAlbumDB(dbAddress.album).register(
                 title,
@@ -272,17 +276,129 @@ contract Orchestrator is Ownable {
             );
     }
 
+    function changeAlbumNonSpecialFullData(
+        uint256 id,
+        string memory title,
+        uint256 principalArtistId,
+        string memory metadataURI,
+        uint256[] memory musicIds,
+        uint256 price,
+        bool canBePurchased
+    ) external {
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (
+            IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
+            msg.sender
+        ) revert();
+        if (IAlbumDB(dbAddress.album).isAnSpecialEdition(id)) revert();
+
+        IAlbumDB(dbAddress.album).change(
+            id,
+            title,
+            principalArtistId,
+            metadataURI,
+            musicIds,
+            price,
+            canBePurchased,
+            false,
+            "",
+            0
+        );
+    }
+
+    function changeAlbumSpecialFullData(
+        uint256 id,
+        string memory title,
+        uint256 principalArtistId,
+        string memory metadataURI,
+        uint256[] memory musicIds,
+        uint256 price,
+        bool canBePurchased,
+        string memory specialEditionName,
+        uint256 maxSupplySpecialEdition
+    ) external {
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (
+            IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
+            msg.sender
+        ) revert();
+        if (!IAlbumDB(dbAddress.album).isAnSpecialEdition(id)) revert();
+
+        if (
+            maxSupplySpecialEdition <=
+            IAlbumDB(dbAddress.album).getTotalSupply(id)
+        ) revert();
+
+        IAlbumDB(dbAddress.album).change(
+            id,
+            title,
+            principalArtistId,
+            metadataURI,
+            musicIds,
+            price,
+            canBePurchased,
+            true,
+            specialEditionName,
+            maxSupplySpecialEdition
+        );
+    }
+
+    function changeAlbumPurchaseability(
+        uint256 id,
+        bool canBePurchased
+    ) external {
+        uint256 principalArtistId = IAlbumDB(dbAddress.album)
+            .getPrincipalArtistId(id);
+        if (
+            IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
+            msg.sender
+        ) revert();
+        IAlbumDB(dbAddress.album).changePurchaseability(id, canBePurchased);
+    }
+
+    function changeAlbumPrice(uint256 id, uint256 price) external {
+        uint256 principalArtistId = IAlbumDB(dbAddress.album)
+            .getPrincipalArtistId(id);
+        if (
+            IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
+            msg.sender
+        ) revert();
+
+        IAlbumDB(dbAddress.album).changePrice(id, price);
+    }
+
+    function purchaseAlbum(uint256 albumId) external payable {
+        uint256 userID = IUserDB(dbAddress.user).getId(msg.sender);
+
+        uint[] memory listOfSong = IAlbumDB(dbAddress.album).purchase(
+            albumId,
+            userID
+        );
+        IUserDB(dbAddress.user).addSongs(userID, listOfSong);
+
+        _executePayment(
+            userID,
+            IAlbumDB(dbAddress.album).getPrincipalArtistId(albumId),
+            IAlbumDB(dbAddress.album).getPrice(albumId)
+        );
+
+        emit AlbumPurchased(
+            albumId,
+            userID,
+            IAlbumDB(dbAddress.album).getPrice(albumId)
+        );
+    }
+
     function _executePayment(
         uint256 userId,
         uint256 artistId,
-        uint256 songId
+        uint256 price
     ) internal {
-        uint256 price = ISongDB(dbAddress.song).getPrice(songId);
-
         if (price != 0) {
-
             uint256 userBalance = IUserDB(dbAddress.user).getBalance(userId);
-            (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(price);
+            (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(
+                price
+            );
             if (userBalance < totalPrice) revert();
 
             IUserDB(dbAddress.user).deductBalance(userId, totalPrice);
