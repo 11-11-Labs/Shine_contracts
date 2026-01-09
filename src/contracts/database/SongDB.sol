@@ -176,7 +176,7 @@ contract SongDB is IdUtils, Ownable {
         return songs[id].PrincipalArtistId;
     }
 
-    function isPurschaseable(uint256 id) external view returns (bool) {
+    function isPurchasable(uint256 id) external view returns (bool) {
         return songs[id].CanBePurchased;
     }
 

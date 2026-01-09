@@ -52,7 +52,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "Song IDs should match"
         );
         assertTrue(
-            albumDB.isPurschaseable(assignedId),
+            albumDB.isPurchasable(assignedId),
             "Album should be purchasable"
         );
         assertEq(
@@ -233,7 +233,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "Song IDs should be updated"
         );
         assertTrue(
-            albumDB.isPurschaseable(assignedId),
+            albumDB.isPurchasable(assignedId),
             "Album should be purchasable"
         );
         assertEq(
@@ -278,7 +278,7 @@ contract AlbumDB_test_unit_correct is Constants {
         albumDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
         assertFalse(
-            albumDB.isPurschaseable(assignedId),
+            albumDB.isPurchasable(assignedId),
             "Album should not be purchasable"
         );
     }

@@ -459,7 +459,7 @@ contract Orchestrator_test_unit_correct is Constants {
             "Song IDs should match the registered song IDs"
         );
         assertTrue(
-            albumDB.isPurschaseable(albumId),
+            albumDB.isPurchasable(albumId),
             "Album should be purchasable"
         );
         assertEq(
@@ -558,7 +558,7 @@ contract Orchestrator_test_unit_correct is Constants {
             "Song IDs should remain unchanged"
         );
         assertFalse(
-            albumDB.isPurschaseable(albumId),
+            albumDB.isPurchasable(albumId),
             "Album should not be purchasable after update"
         );
         assertEq(
@@ -633,7 +633,7 @@ contract Orchestrator_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertFalse(
-            albumDB.isPurschaseable(albumId),
+            albumDB.isPurchasable(albumId),
             "Album should not be purchasable after update"
         );
         assertEq(

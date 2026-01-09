@@ -753,7 +753,7 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertTrue(
-            albumDB.isPurschaseable(assignedId),
+            albumDB.isPurchasable(assignedId),
             "Album should remain purchasable due to revert"
         );
     }

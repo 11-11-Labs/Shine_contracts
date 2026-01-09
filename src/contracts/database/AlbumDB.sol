@@ -205,7 +205,7 @@ contract AlbumDB is IdUtils, Ownable {
         return albums[id].Price;
     }
 
-    function isPurschaseable(uint256 id) external view returns (bool) {
+    function isPurchasable(uint256 id) external view returns (bool) {
         return albums[id].CanBePurchased;
     }
 
