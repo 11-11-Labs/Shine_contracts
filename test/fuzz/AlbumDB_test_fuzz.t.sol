@@ -22,7 +22,7 @@ contract AlbumDB_test_fuzz is Constants {
         uint256 maxSupplySpecialEdition;
     }
 
-    function test_unit_correct_AlbumDB__register(
+    function test_fuzz_AlbumDB__register(
         RegisterInputs memory inputs
     ) public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
@@ -87,7 +87,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__purchase(uint256 buyer) public {
+    function test_fuzz_AlbumDB__purchase(uint256 buyer) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -120,7 +120,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__purchaseSpecialEdition(
+    function test_fuzz_AlbumDB__purchaseSpecialEdition(
         uint256 buyer
     ) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
@@ -159,7 +159,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__refund(uint256 user) public {
+    function test_fuzz_AlbumDB__refund(uint256 user) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -200,7 +200,7 @@ contract AlbumDB_test_fuzz is Constants {
         uint256 maxSupplySpecialEdition;
     }
 
-    function test_unit_correct_AlbumDB__change(
+    function test_fuzz_AlbumDB__change(
         ChangeInputs memory inputs
     ) public {
         uint256[] memory listOfSongIDsBefore = new uint256[](3);
@@ -286,7 +286,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__changePurchaseability(
+    function test_fuzz_AlbumDB__changePurchaseability(
         bool isPurchasableFlag
     ) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
@@ -315,7 +315,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__changePrice(uint256 newPrice) public {
+    function test_fuzz_AlbumDB__changePrice(uint256 newPrice) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -342,7 +342,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_unit_correct_AlbumDB__setBannedStatus(bool isBanned) public {
+    function test_fuzz_AlbumDB__setBannedStatus(bool isBanned) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
