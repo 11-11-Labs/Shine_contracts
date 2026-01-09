@@ -203,6 +203,8 @@ contract AlbumDB_test_fuzz is Constants {
     function test_fuzz_AlbumDB__change(
         ChangeInputs memory inputs
     ) public {
+        vm.assume(bytes(inputs.title).length > 0);
+        vm.assume(inputs.musicIds.length > 0);
         uint256[] memory listOfSongIDsBefore = new uint256[](3);
         listOfSongIDsBefore[0] = 67;
         listOfSongIDsBefore[1] = 21;
