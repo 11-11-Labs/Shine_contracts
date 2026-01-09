@@ -21,7 +21,6 @@ interface IAlbumDB {
     error AlbumIsBanned();
     error AlbumMaxSupplyReached();
     error AlbumNotPurchasable();
-    error AlbumNotSpecialEdition();
     error AlreadyInitialized();
     error NewOwnerIsZeroAddress();
     error NoHandoverRequest();
@@ -31,15 +30,9 @@ interface IAlbumDB {
 
     event OwnershipHandoverCanceled(address indexed pendingOwner);
     event OwnershipHandoverRequested(address indexed pendingOwner);
-    event OwnershipTransferred(
-        address indexed oldOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
 
-    function canUserBuy(
-        uint256 id,
-        uint256 userId
-    ) external view returns (bool);
+    function canUserBuy(uint256 id, uint256 userId) external view returns (bool);
     function cancelOwnershipHandover() external payable;
     function change(
         uint256 id,
@@ -59,33 +52,18 @@ interface IAlbumDB {
     function completeOwnershipHandover(address pendingOwner) external payable;
     function exists(uint256 id) external view returns (bool);
     function getCurrentId() external view returns (uint256);
-    function getMetadata(
-        uint256 id
-    ) external view returns (SongMetadata memory);
+    function getMetadata(uint256 id) external view returns (SongMetadata memory);
     function getPrice(uint256 id) external view returns (uint256);
     function getPrincipalArtistId(uint256 id) external view returns (uint256);
-    function hasUserPurchased(
-        uint256 id,
-        uint256 userId
-    ) external view returns (bool);
+    function getTotalSupply(uint256 id) external view returns (uint256);
+    function hasUserPurchased(uint256 id, uint256 userId) external view returns (bool);
+    function isAnSpecialEdition(uint256 id) external view returns (bool);
     function isPurchasable(uint256 id) external view returns (bool);
     function owner() external view returns (address result);
-    function ownershipHandoverExpiresAt(
-        address pendingOwner
-    ) external view returns (uint256 result);
+    function ownershipHandoverExpiresAt(address pendingOwner) external view returns (uint256 result);
     function peekNextId() external view returns (uint256);
-    function purchase(
-        uint256 id,
-        uint256 userId
-    ) external returns (uint256[] memory);
-    function purchaseSpecialEdition(
-        uint256 id,
-        uint256 userId
-    ) external returns (uint256[] memory);
-    function refund(
-        uint256 id,
-        uint256 userId
-    ) external returns (uint256[] memory, uint256);
+    function purchase(uint256 id, uint256 userId) external returns (uint256[] memory);
+    function refund(uint256 id, uint256 userId) external returns (uint256[] memory, uint256);
     function register(
         string memory title,
         uint256 principalArtistId,

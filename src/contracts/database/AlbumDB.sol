@@ -29,15 +29,12 @@ contract AlbumDB is IdUtils, Ownable {
     error AlbumNotPurchasable();
     /// @dev Thrown when attempting to interact with a banned album
     error AlbumIsBanned();
-    /// @dev Thrown when trying to purchase a special edition but the album is not a special edition
-    error AlbumNotSpecialEdition();
     /// @dev Thrown when the special edition max supply has been reached
     error AlbumMaxSupplyReached();
     /// @dev Thrown when trying to refund an album the user has not purchased
     error UserNotBoughtAlbum();
     /// @dev Thrown when trying to create or update an album with zero songs
     error AlbumCannotHaveZeroSongs();
-    
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -104,7 +101,7 @@ contract AlbumDB is IdUtils, Ownable {
     /**
      * @notice Initializes the AlbumDB contract
      * @dev Sets the Orchestrator contract as the owner for access control
-     * @param _orchestratorAddress Address of the Orchestrator contract that will 
+     * @param _orchestratorAddress Address of the Orchestrator contract that will
      *                             manage this database
      */
     constructor(address _orchestratorAddress) {
@@ -119,7 +116,7 @@ contract AlbumDB is IdUtils, Ownable {
      * @param principalArtistId The unique ID of the main artist
      * @param metadataURI URI pointing to off-chain metadata (e.g., IPFS hash)
      * @param songIDs Array of song IDs included in this album
-     * @param price The net purchase price for this album. 
+     * @param price The net purchase price for this album.
      *              Additional fees and taxes may apply separately.
      * @param canBePurchased Whether the album is available for purchase
      * @param isASpecialEdition Whether this is a limited special edition
@@ -160,8 +157,10 @@ contract AlbumDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a standard album purchase for a user
-     * @dev Only callable by owner. Reverts if user already owns it or album is 
-     *      not purchasable/banned.
+     * @dev Only callable by owner. Marks the album as purchased by the user and 
+     *      increments the purchase counter. For special editions, validates that
+     *      max supply has not been reached. Reverts if: user already owns album,
+     *      album is not purchasable, album is banned, or special edition max supply reached.
      * @param id The album ID to purchase
      * @param userId The unique identifier of the purchasing user
      * @return Array of song IDs included in the purchased album
@@ -180,40 +179,15 @@ contract AlbumDB is IdUtils, Ownable {
 
         if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
 
-        isBoughtByUserId[id][userId] = true;
-        albums[id].TimesBought++;
-
-        return albums[id].MusicIds;
-    }
-
-    /**
-     * @notice Processes a special edition album purchase for a user
-     * @dev Only callable by owner. Additional checks for special edition status and max supply.
-     * @param id The album ID to purchase
-     * @param userId The unique identifier of the purchasing user
-     * @return Array of song IDs included in the purchased album
-     */
-    function purchaseSpecialEdition(
-        uint256 id,
-        uint256 userId
-    )
-        external
-        onlyOwner
-        onlyIfNotBanned(id)
-        onlyIfExist(id)
-        returns (uint256[] memory)
-    {
-        if (isBoughtByUserId[id][userId]) revert UserBoughtAlbum();
-
-        if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
-
-        if (!albums[id].IsASpecialEdition) revert AlbumNotSpecialEdition();
-
-        if (albums[id].TimesBought >= albums[id].MaxSupplySpecialEdition)
-            revert AlbumMaxSupplyReached();
+        if (albums[id].IsASpecialEdition) {
+            if (albums[id].TimesBought >= albums[id].MaxSupplySpecialEdition) {
+                revert AlbumMaxSupplyReached();
+            }
+        }
 
         isBoughtByUserId[id][userId] = true;
         albums[id].TimesBought++;
+
         return albums[id].MusicIds;
     }
 
@@ -240,7 +214,7 @@ contract AlbumDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Metadata Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Updates all metadata fields for an existing album
-     * @dev Only callable by owner. Preserves TimesBought and IsBanned status. 
+     * @dev Only callable by owner. Preserves TimesBought and IsBanned status.
      *      Reverts if musicIds is empty.
      * @param id The album ID to update
      * @param title New display name for the album
@@ -297,7 +271,7 @@ contract AlbumDB is IdUtils, Ownable {
 
     /**
      * @notice Updates the net price of an album
-     * @dev Only callable by owner. Cannot modify banned albums. 
+     * @dev Only callable by owner. Cannot modify banned albums.
      *      This is the net price; fees and taxes are separate.
      * @param id The album ID to update
      * @param price New net purchase price for the album
@@ -335,6 +309,27 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 userId
     ) external view returns (bool) {
         return isBoughtByUserId[id][userId];
+    }
+
+    /**
+     * @notice Checks if an album is a special edition
+     * @param id The album ID to query
+     * @return True if the album is a special edition, false otherwise
+     */
+    function isAnSpecialEdition(uint256 id) external view returns (bool) {
+        return albums[id].IsASpecialEdition;
+    }
+
+    /**
+     * @notice Gets the total number of times an album has been purchased if
+     *         is a special edition
+     * @param id The album ID to query
+     * @return The total purchase count for the album
+     *
+     * @notice if the album is not a special edition, this returns 0
+     */
+    function getTotalSupply(uint256 id) external view returns (uint256) {
+        return albums[id].TimesBought;
     }
 
     /**
@@ -397,19 +392,6 @@ contract AlbumDB is IdUtils, Ownable {
         return albums[id];
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**********************************
 🮋🮋 Made with ❤️ by 11:11 Labs 🮋🮋

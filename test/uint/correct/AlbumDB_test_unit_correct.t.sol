@@ -128,10 +128,7 @@ contract AlbumDB_test_unit_correct is Constants {
             67
             // he he c:
         );
-        uint256[] memory purchasedSongIDs = albumDB.purchaseSpecialEdition(
-            assignedId,
-            1234
-        );
+        uint256[] memory purchasedSongIDs = albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
