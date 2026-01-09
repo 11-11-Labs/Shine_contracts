@@ -42,7 +42,8 @@ contract SongDB is IdUtils, Ownable {
      * @param MediaURI URI pointing to the song media file (e.g., IPFS)
      * @param MetadataURI URI pointing to off-chain metadata (e.g., IPFS)
      * @param CanBePurchased Flag indicating if the song is available for sale
-     * @param Price The cost to purchase this song (in wei or token units)
+     * @param Price The net purchase price for this song (in wei or token units). 
+     *              Does not include platform fees or taxes.
      * @param TimesBought Counter tracking total number of purchases
      * @param IsBanned Flag indicating if the song has been banned from the platform
      */
@@ -93,7 +94,8 @@ contract SongDB is IdUtils, Ownable {
     /**
      * @notice Initializes the SongDB contract
      * @dev Sets the Orchestrator contract as the owner for access control
-     * @param _orchestratorAddress Address of the Orchestrator contract that will manage this database
+     * @param _orchestratorAddress Address of the Orchestrator contract that will manage 
+     *                             this database
      */
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
@@ -109,7 +111,8 @@ contract SongDB is IdUtils, Ownable {
      * @param mediaURI URI pointing to the song media file
      * @param metadataURI URI pointing to off-chain metadata
      * @param canBePurchased Whether the song is available for purchase
-     * @param price The purchase price for this song
+     * @param price The net purchase price for this song. 
+     *              Additional fees and taxes may apply separately.
      * @return The newly assigned song ID
      */
     function register(
@@ -141,7 +144,8 @@ contract SongDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a song purchase for a user
-     * @dev Only callable by owner. Reverts if user already owns it or song is not purchasable/banned.
+     * @dev Only callable by owner. Reverts if user already owns it or song is not 
+     *      purchasable/banned.
      * @param id The song ID to purchase
      * @param userId The unique identifier of the purchasing user
      */
@@ -186,7 +190,7 @@ contract SongDB is IdUtils, Ownable {
      * @param mediaURI New URI for the song media file
      * @param metadataURI New URI for off-chain metadata
      * @param canBePurchased New purchasability status
-     * @param price New purchase price
+     * @param price New net purchase price. Additional fees and taxes may apply separately.
      */
     function change(
         uint256 id,
@@ -225,10 +229,11 @@ contract SongDB is IdUtils, Ownable {
     }
 
     /**
-     * @notice Updates the price of a song
-     * @dev Only callable by owner. Cannot modify banned songs.
+     * @notice Updates the net price of a song
+     * @dev Only callable by owner. Cannot modify banned songs. 
+     *      This is the net price; fees and taxes are separate.
      * @param id The song ID to update
-     * @param price New purchase price for the song
+     * @param price New net purchase price for the song
      */
     function changePrice(
         uint256 id,
@@ -291,9 +296,10 @@ contract SongDB is IdUtils, Ownable {
     }
 
     /**
-     * @notice Gets the current price of a song
+     * @notice Gets the current net price of a song
      * @param id The song ID to query
-     * @return The price of the song in wei or token units
+     * @return The net price of the song in wei or token units 
+     *         (does not include fees or taxes)
      */
     function getPrice(uint256 id) external view returns (uint256) {
         return songs[id].Price;

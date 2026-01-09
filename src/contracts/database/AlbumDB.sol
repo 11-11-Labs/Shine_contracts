@@ -47,7 +47,8 @@ contract AlbumDB is IdUtils, Ownable {
      * @param PrincipalArtistId The unique identifier of the main artist
      * @param MetadataURI URI pointing to off-chain metadata (e.g., IPFS)
      * @param MusicIds Array of song IDs included in this album
-     * @param Price The cost to purchase this album (in wei or token units)
+     * @param Price The net purchase price for this album (in wei or token units).
+     *              Does not include platform fees or taxes.
      * @param TimesBought Counter tracking total number of purchases
      * @param CanBePurchased Flag indicating if the album is available for sale
      * @param IsASpecialEdition Flag indicating if this is a limited special edition
@@ -103,7 +104,8 @@ contract AlbumDB is IdUtils, Ownable {
     /**
      * @notice Initializes the AlbumDB contract
      * @dev Sets the Orchestrator contract as the owner for access control
-     * @param _orchestratorAddress Address of the Orchestrator contract that will manage this database
+     * @param _orchestratorAddress Address of the Orchestrator contract that will 
+     *                             manage this database
      */
     constructor(address _orchestratorAddress) {
         _initializeOwner(_orchestratorAddress);
@@ -117,7 +119,8 @@ contract AlbumDB is IdUtils, Ownable {
      * @param principalArtistId The unique ID of the main artist
      * @param metadataURI URI pointing to off-chain metadata (e.g., IPFS hash)
      * @param songIDs Array of song IDs included in this album
-     * @param price The purchase price for this album
+     * @param price The net purchase price for this album. 
+     *              Additional fees and taxes may apply separately.
      * @param canBePurchased Whether the album is available for purchase
      * @param isASpecialEdition Whether this is a limited special edition
      * @param specialEditionName Name for the special edition (if applicable)
@@ -157,7 +160,8 @@ contract AlbumDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a standard album purchase for a user
-     * @dev Only callable by owner. Reverts if user already owns it or album is not purchasable/banned.
+     * @dev Only callable by owner. Reverts if user already owns it or album is 
+     *      not purchasable/banned.
      * @param id The album ID to purchase
      * @param userId The unique identifier of the purchasing user
      * @return Array of song IDs included in the purchased album
@@ -236,13 +240,14 @@ contract AlbumDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Metadata Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Updates all metadata fields for an existing album
-     * @dev Only callable by owner. Preserves TimesBought and IsBanned status. Reverts if musicIds is empty.
+     * @dev Only callable by owner. Preserves TimesBought and IsBanned status. 
+     *      Reverts if musicIds is empty.
      * @param id The album ID to update
      * @param title New display name for the album
      * @param principalArtistId New principal artist ID
      * @param metadataURI New URI for off-chain metadata
      * @param musicIds New array of song IDs (cannot be empty)
-     * @param price New purchase price
+     * @param price New net purchase price. Additional fees and taxes may apply separately.
      * @param canBePurchased New purchasability status
      * @param isASpecialEdition New special edition status
      * @param specialEditionName New special edition name
@@ -291,10 +296,11 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     /**
-     * @notice Updates the price of an album
-     * @dev Only callable by owner. Cannot modify banned albums.
+     * @notice Updates the net price of an album
+     * @dev Only callable by owner. Cannot modify banned albums. 
+     *      This is the net price; fees and taxes are separate.
      * @param id The album ID to update
-     * @param price New purchase price for the album
+     * @param price New net purchase price for the album
      */
     function changePrice(
         uint256 id,
@@ -332,9 +338,9 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     /**
-     * @notice Gets the current price of an album
+     * @notice Gets the current net price of an album
      * @param id The album ID to query
-     * @return The price of the album in wei or token units
+     * @return The net price of the album in wei or token units (does not include fees or taxes)
      */
     function getPrice(uint256 id) external view returns (uint256) {
         return albums[id].Price;
