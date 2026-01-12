@@ -26,15 +26,10 @@ import {EventsLib} from "@shine/contracts/orchestrator/library/EventsLib.sol";
 
 contract Orchestrator is Ownable {
     address private newOrchestratorAddress;
-
     uint256 private amountCollectedInFees;
-
     StructsLib.AddressProposal private stablecoin;
-
     StructsLib.DataBaseList private dbAddress;
-
     StructsLib.Breakers private breaker;
-
     uint16 private percentageFee;
 
     constructor(address initialOwner, address _stablecoinAddress) {
@@ -501,7 +496,8 @@ contract Orchestrator is Ownable {
     }
 
     function migrateOrchestrator(
-        address orchestratorAddressToMigrate
+        address orchestratorAddressToMigrate,
+        address accountToTransferCollectedFees
     ) external onlyOwner {
         if (orchestratorAddressToMigrate == address(0)) revert();
 
@@ -513,6 +509,18 @@ contract Orchestrator is Ownable {
         );
         ISongDB(dbAddress.song).transferOwnership(orchestratorAddressToMigrate);
         IUserDB(dbAddress.user).transferOwnership(orchestratorAddressToMigrate);
+
+        if (amountCollectedInFees > 0)
+            IERC20(stablecoin.current).transfer(
+                accountToTransferCollectedFees,
+                amountCollectedInFees
+            );
+
+        uint256 balance = IERC20(stablecoin.current).balanceOf(address(this));
+        IERC20(stablecoin.current).transfer(
+            orchestratorAddressToMigrate,
+            balance
+        );
 
         newOrchestratorAddress = orchestratorAddressToMigrate;
     }
