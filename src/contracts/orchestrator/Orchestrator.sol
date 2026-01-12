@@ -20,68 +20,83 @@ import {IArtistDB} from "@shine/interface/IArtistDB.sol";
 import {IUserDB} from "@shine/interface/IUserDB.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 import {IERC20} from "@shine/interface/IERC20.sol";
+import {ErrorsLib} from "@shine/contracts/orchestrator/library/ErrorsLib.sol";
+import {StructsLib} from "@shine/contracts/orchestrator/library/StructsLib.sol";
+import {EventsLib} from "@shine/contracts/orchestrator/library/EventsLib.sol";
 
 contract Orchestrator is Ownable {
-    struct DataBaseList {
-        address album;
-        address artist;
-        address song;
-        address user;
-    }
-
-    struct Breakers {
-        bytes1 addressSetup;
-        bytes1 shop;
-    }
-
-    struct AddressProposal {
-        address current;
-        address proposed;
-        uint256 timeToExecute;
-    }
-
     address private newOrchestratorAddress;
 
-    uint256 amountCollectedInFees;
+    uint256 private amountCollectedInFees;
 
-    AddressProposal private stablecoin;
+    StructsLib.AddressProposal private stablecoin;
 
-    DataBaseList private dbAddress;
+    StructsLib.DataBaseList private dbAddress;
 
-    Breakers private breaker;
+    StructsLib.Breakers private breaker;
 
     uint16 private percentageFee;
-
-    event SongPurchased(
-        uint256 indexed songId,
-        uint256 indexed userId,
-        uint256 price
-    );
-
-    event AlbumPurchased(
-        uint256 indexed albumId,
-        uint256 indexed userId,
-        uint256 price
-    );
 
     constructor(address initialOwner, address _stablecoinAddress) {
         _initializeOwner(initialOwner);
         stablecoin.current = _stablecoinAddress;
     }
 
-    function _setDatabaseAddresses(
-        address _dbalbum,
-        address _dbartist,
-        address _dbsong,
-        address _dbuser
-    ) external onlyOwner {
-        if (breaker.addressSetup != bytes1(0x00)) revert();
-        dbAddress.album = _dbalbum;
-        dbAddress.artist = _dbartist;
-        dbAddress.song = _dbsong;
-        dbAddress.user = _dbuser;
-        breaker.addressSetup = bytes1(0x01);
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Funds Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+
+    function depositFunds(uint256 userId, uint256 amount) external {
+        if (IUserDB(dbAddress.user).getAddress(userId) != msg.sender)
+            revert ErrorsLib.AddressIsNotOwnerOfUserId();
+
+        IERC20(stablecoin.current).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        IUserDB(dbAddress.user).addBalance(userId, amount);
     }
+
+    function giftFunds(uint256 toUserId, uint256 amount) external {
+        if (!IUserDB(dbAddress.user).exists(toUserId))
+            revert ErrorsLib.UserIdDoesNotExist();
+
+        IERC20(stablecoin.current).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        IUserDB(dbAddress.user).addBalance(toUserId, amount);
+    }
+
+    function withdrawFunds(
+        bool isArtist,
+        uint256 userId,
+        uint256 amount
+    ) external {
+        if (isArtist) {
+            if (IArtistDB(dbAddress.artist).getAddress(userId) != msg.sender)
+                revert ErrorsLib.AddressIsNotOwnerOfArtistId();
+
+            if (IArtistDB(dbAddress.artist).getBalance(userId) < amount)
+                revert ErrorsLib.InsufficientBalance();
+
+            IArtistDB(dbAddress.artist).deductBalance(userId, amount);
+        } else {
+            if (IUserDB(dbAddress.user).getAddress(userId) != msg.sender)
+                revert ErrorsLib.AddressIsNotOwnerOfUserId();
+
+            if (IUserDB(dbAddress.user).getBalance(userId) < amount)
+                revert ErrorsLib.InsufficientBalance();
+
+            IUserDB(dbAddress.user).deductBalance(userId, amount);
+        }
+
+        IERC20(stablecoin.current).transfer(msg.sender, amount);
+    }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 User/Artist Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function register(
         bool isArtist,
@@ -114,10 +129,13 @@ contract Orchestrator is Ownable {
     ) external {
         if (isArtist) {
             if (IArtistDB(dbAddress.artist).getAddress(id) != msg.sender)
-                revert();
+                revert ErrorsLib.AddressIsNotOwnerOfArtistId();
+
             IArtistDB(dbAddress.artist).changeBasicData(id, name, metadataURI);
         } else {
-            if (IUserDB(dbAddress.user).getAddress(id) != msg.sender) revert();
+            if (IUserDB(dbAddress.user).getAddress(id) != msg.sender)
+                revert ErrorsLib.AddressIsNotOwnerOfUserId();
+
             IUserDB(dbAddress.user).changeBasicData(id, name, metadataURI);
         }
     }
@@ -129,13 +147,18 @@ contract Orchestrator is Ownable {
     ) external {
         if (isArtist) {
             if (IArtistDB(dbAddress.artist).getAddress(id) != msg.sender)
-                revert();
+                revert ErrorsLib.AddressIsNotOwnerOfArtistId();
+
             IArtistDB(dbAddress.artist).changeAddress(id, newAddress);
         } else {
-            if (IUserDB(dbAddress.user).getAddress(id) != msg.sender) revert();
+            if (IUserDB(dbAddress.user).getAddress(id) != msg.sender)
+                revert ErrorsLib.AddressIsNotOwnerOfUserId();
+
             IUserDB(dbAddress.user).changeAddress(id, newAddress);
         }
     }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Song Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function registerSong(
         string memory title,
@@ -146,17 +169,23 @@ contract Orchestrator is Ownable {
         bool canBePurchased,
         uint256 price
     ) external returns (uint256) {
-        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId))
+            revert ErrorsLib.ArtistIdDoesNotExist(principalArtistId);
+
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
+        ) revert ErrorsLib.AddressIsNotOwnerOfArtistId();
+
         if (artistIDs.length > 0) {
             for (uint256 i = 0; i < artistIDs.length; i++) {
-                if (!IArtistDB(dbAddress.artist).exists(artistIDs[i])) revert();
+                if (!IArtistDB(dbAddress.artist).exists(artistIDs[i]))
+                    revert ErrorsLib.ArtistIdDoesNotExist(artistIDs[i]);
             }
         }
-        if (bytes(title).length == 0) revert();
+
+        if (bytes(title).length == 0) revert ErrorsLib.TitleCannotBeEmpty();
+
         return
             ISongDB(dbAddress.song).register(
                 title,
@@ -179,17 +208,22 @@ contract Orchestrator is Ownable {
         bool canBePurchased,
         uint256 price
     ) external {
-        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId))
+            revert ErrorsLib.ArtistIdDoesNotExist(principalArtistId);
+
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
 
-        if (!ISongDB(dbAddress.song).exists(id)) revert();
+        if (!ISongDB(dbAddress.song).exists(id))
+            revert ErrorsLib.SongIdDoesNotExist(id);
+
         if (
             ISongDB(dbAddress.song).getPrincipalArtistId(id) !=
             principalArtistId
-        ) revert();
+        ) revert ErrorsLib.ArtistIdIsNotPrincipalArtistIdOfSong();
+
         ISongDB(dbAddress.song).change(
             id,
             title,
@@ -211,7 +245,8 @@ contract Orchestrator is Ownable {
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
+
         ISongDB(dbAddress.song).changePurchaseability(id, canBePurchased);
     }
 
@@ -221,7 +256,7 @@ contract Orchestrator is Ownable {
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
 
         ISongDB(dbAddress.song).changePrice(id, price);
     }
@@ -230,18 +265,21 @@ contract Orchestrator is Ownable {
         uint256 userID = IUserDB(dbAddress.user).getId(msg.sender);
         ISongDB(dbAddress.song).purchase(songId, userID);
         IUserDB(dbAddress.user).addSong(userID, songId);
+
         _executePayment(
             userID,
             ISongDB(dbAddress.song).getPrincipalArtistId(songId),
             ISongDB(dbAddress.song).getPrice(songId)
         );
 
-        emit SongPurchased(
+        emit EventsLib.SongPurchased(
             songId,
             userID,
             ISongDB(dbAddress.song).getPrice(songId)
         );
     }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Album Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function registerAlbum(
         string memory title,
@@ -254,16 +292,23 @@ contract Orchestrator is Ownable {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external returns (uint256) {
-        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId))
+            revert ErrorsLib.ArtistIdDoesNotExist(principalArtistId);
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
-        if (bytes(title).length == 0) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
+
+        if (bytes(title).length == 0) revert ErrorsLib.TitleCannotBeEmpty();
+
         if (isASpecialEdition) {
-            if (bytes(specialEditionName).length == 0) revert();
-            if (maxSupplySpecialEdition == 0) revert();
+            if (maxSupplySpecialEdition == 0)
+                revert ErrorsLib.MaxSupplyMustBeGreaterThanZero();
+
+            if (bytes(specialEditionName).length == 0)
+                revert ErrorsLib.SpecialEditionNameCannotBeEmpty();
         }
+
         for (uint256 i = 0; i < songIDs.length; i++) {
             if (!ISongDB(dbAddress.song).exists(songIDs[i])) revert();
             if (
@@ -295,12 +340,16 @@ contract Orchestrator is Ownable {
         uint256 price,
         bool canBePurchased
     ) external {
-        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId))
+            revert ErrorsLib.ArtistIdDoesNotExist(principalArtistId);
+
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
-        if (IAlbumDB(dbAddress.album).isAnSpecialEdition(id)) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
+
+        if (IAlbumDB(dbAddress.album).isAnSpecialEdition(id))
+            revert ErrorsLib.AlbumIsASpecialEdition();
 
         IAlbumDB(dbAddress.album).change(
             id,
@@ -327,17 +376,21 @@ contract Orchestrator is Ownable {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external {
-        if (!IArtistDB(dbAddress.artist).exists(principalArtistId)) revert();
+        if (!IArtistDB(dbAddress.artist).exists(principalArtistId))
+            revert ErrorsLib.ArtistIdDoesNotExist(principalArtistId);
+
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
-        if (!IAlbumDB(dbAddress.album).isAnSpecialEdition(id)) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
+
+        if (!IAlbumDB(dbAddress.album).isAnSpecialEdition(id))
+            revert ErrorsLib.AlbumIsNotASpecialEdition();
 
         if (
             maxSupplySpecialEdition <=
             IAlbumDB(dbAddress.album).getTotalSupply(id)
-        ) revert();
+        ) revert ErrorsLib.MustBeGreaterThanCurrent();
 
         IAlbumDB(dbAddress.album).change(
             id,
@@ -362,7 +415,8 @@ contract Orchestrator is Ownable {
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
+
         IAlbumDB(dbAddress.album).changePurchaseability(id, canBePurchased);
     }
 
@@ -372,7 +426,7 @@ contract Orchestrator is Ownable {
         if (
             IArtistDB(dbAddress.artist).getAddress(principalArtistId) !=
             msg.sender
-        ) revert();
+        ) revert ErrorsLib.SenderIsNotPrincipalArtist();
 
         IAlbumDB(dbAddress.album).changePrice(id, price);
     }
@@ -392,58 +446,35 @@ contract Orchestrator is Ownable {
             IAlbumDB(dbAddress.album).getPrice(albumId)
         );
 
-        emit AlbumPurchased(
+        emit EventsLib.AlbumPurchased(
             albumId,
             userID,
             IAlbumDB(dbAddress.album).getPrice(albumId)
         );
     }
 
-    function depositFunds(uint256 userId, uint256 amount) external {
-        if (IUserDB(dbAddress.user).getAddress(userId) != msg.sender) revert();
-        IERC20(stablecoin.current).transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-        IUserDB(dbAddress.user).addBalance(userId, amount);
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Admin Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+
+    function setDatabaseAddresses(
+        address _dbalbum,
+        address _dbartist,
+        address _dbsong,
+        address _dbuser
+    ) external onlyOwner {
+        if (breaker.addressSetup != bytes1(0x00))
+            revert ErrorsLib.AddressSetupAlreadyDone();
+
+        dbAddress.album = _dbalbum;
+        dbAddress.artist = _dbartist;
+        dbAddress.song = _dbsong;
+        dbAddress.user = _dbuser;
+        breaker.addressSetup = bytes1(0x01);
     }
 
-    function giftFunds(uint256 toUserId, uint256 amount) external {
-        if (IUserDB(dbAddress.user).exists(toUserId) == false) revert();
-
-        IERC20(stablecoin.current).transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-
-        IUserDB(dbAddress.user).addBalance(toUserId, amount);
-    }
-
-    function withdrawFunds(
-        bool isArtist,
-        uint256 userId,
-        uint256 amount
-    ) external {
-        if (isArtist) {
-            if (IArtistDB(dbAddress.artist).getAddress(userId) != msg.sender)
-                revert();
-
-            if (IArtistDB(dbAddress.artist).getBalance(userId) < amount)
-                revert();
-
-            IArtistDB(dbAddress.artist).deductBalance(userId, amount);
-        } else {
-            if (IUserDB(dbAddress.user).getAddress(userId) != msg.sender)
-                revert();
-
-            if (IUserDB(dbAddress.user).getBalance(userId) < amount) revert();
-
-            IUserDB(dbAddress.user).deductBalance(userId, amount);
-        }
-
-        IERC20(stablecoin.current).transfer(msg.sender, amount);
+    function addPercentageFee(uint16 _percentageFee) external onlyOwner {
+        /// @dev percentage fee is in basis points (100 = 1%)
+        if (_percentageFee > 10000) revert(); // max 100%
+        percentageFee = _percentageFee;
     }
 
     function proposeStablecoinAddressChange(
@@ -469,11 +500,42 @@ contract Orchestrator is Ownable {
         stablecoin.timeToExecute = 0;
     }
 
-    function withdrawCollectedFees(address to, uint256 amount) external onlyOwner {
+    function migrateOrchestrator(
+        address orchestratorAddressToMigrate
+    ) external onlyOwner {
+        if (orchestratorAddressToMigrate == address(0)) revert();
+
+        IAlbumDB(dbAddress.album).transferOwnership(
+            orchestratorAddressToMigrate
+        );
+        IArtistDB(dbAddress.artist).transferOwnership(
+            orchestratorAddressToMigrate
+        );
+        ISongDB(dbAddress.song).transferOwnership(orchestratorAddressToMigrate);
+        IUserDB(dbAddress.user).transferOwnership(orchestratorAddressToMigrate);
+
+        newOrchestratorAddress = orchestratorAddressToMigrate;
+    }
+
+    function withdrawCollectedFees(
+        address to,
+        uint256 amount
+    ) external onlyOwner {
         if (amountCollectedInFees < amount) revert();
         amountCollectedInFees -= amount;
         IERC20(stablecoin.current).transfer(to, amount);
     }
+
+    function getAmountCollectedInFees()
+        external
+        view
+        onlyOwner
+        returns (uint256)
+    {
+        return amountCollectedInFees;
+    }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Getter Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function getPriceWithFee(
         uint256 netPrice
@@ -483,27 +545,7 @@ contract Orchestrator is Ownable {
         return (netPrice + fee, fee);
     }
 
-    function addPercentageFee(uint16 _percentageFee) external onlyOwner {
-        /// @dev percentage fee is in basis points (100 = 1%)
-        if (_percentageFee > 10000) revert(); // max 100%
-        percentageFee = _percentageFee;
-    }
-
-    function migrateOrchestrator(
-        address orchestratorAddressToMigrate
-    ) external onlyOwner {
-        if (orchestratorAddressToMigrate == address(0)) revert();
-        IAlbumDB(dbAddress.album).transferOwnership(
-            orchestratorAddressToMigrate
-        );
-        IArtistDB(dbAddress.artist).transferOwnership(
-            orchestratorAddressToMigrate
-        );
-        ISongDB(dbAddress.song).transferOwnership(orchestratorAddressToMigrate);
-        IUserDB(dbAddress.user).transferOwnership(orchestratorAddressToMigrate);
-        newOrchestratorAddress = orchestratorAddressToMigrate;
-    }
-
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Internal Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function _executePayment(
         uint256 userId,
@@ -515,7 +557,8 @@ contract Orchestrator is Ownable {
             (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(
                 price
             );
-            if (userBalance < totalPrice) revert();
+            if (userBalance < totalPrice)
+                revert ErrorsLib.InsufficientBalance();
 
             IUserDB(dbAddress.user).deductBalance(userId, totalPrice);
             IUserDB(dbAddress.user).addBalance(artistId, price);
