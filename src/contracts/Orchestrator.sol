@@ -19,6 +19,7 @@ import {IAlbumDB} from "@shine/interface/IAlbumDB.sol";
 import {IArtistDB} from "@shine/interface/IArtistDB.sol";
 import {IUserDB} from "@shine/interface/IUserDB.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
+import {IERC20} from "@shine/interface/IERC20.sol";
 
 contract Orchestrator is Ownable {
     struct DataBaseList {
@@ -33,15 +34,23 @@ contract Orchestrator is Ownable {
         bytes1 shop;
     }
 
+    struct AddressProposal {
+        address current;
+        address proposed;
+        uint256 timeToExecute;
+    }
+
     address private newOrchestratorAddress;
+
+    uint256 amountCollectedInFees;
+
+    AddressProposal private stablecoin;
 
     DataBaseList private dbAddress;
 
     Breakers private breaker;
 
     uint16 private percentageFee;
-
-    uint256 amountCollectedInFees;
 
     event SongPurchased(
         uint256 indexed songId,
@@ -55,8 +64,9 @@ contract Orchestrator is Ownable {
         uint256 price
     );
 
-    constructor(address initialOwner) {
+    constructor(address initialOwner, address _stablecoinAddress) {
         _initializeOwner(initialOwner);
+        stablecoin.current = _stablecoinAddress;
     }
 
     function _setDatabaseAddresses(
@@ -389,22 +399,80 @@ contract Orchestrator is Ownable {
         );
     }
 
-    function _executePayment(
-        uint256 userId,
-        uint256 artistId,
-        uint256 price
-    ) internal {
-        if (price != 0) {
-            uint256 userBalance = IUserDB(dbAddress.user).getBalance(userId);
-            (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(
-                price
-            );
-            if (userBalance < totalPrice) revert();
+    function depositFunds(uint256 userId, uint256 amount) external {
+        if (IUserDB(dbAddress.user).getAddress(userId) != msg.sender) revert();
+        IERC20(stablecoin.current).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+        IUserDB(dbAddress.user).addBalance(userId, amount);
+    }
 
-            IUserDB(dbAddress.user).deductBalance(userId, totalPrice);
-            IUserDB(dbAddress.user).addBalance(artistId, price);
-            amountCollectedInFees += calculatedFee;
+    function giftFunds(uint256 toUserId, uint256 amount) external {
+        if (IUserDB(dbAddress.user).exists(toUserId) == false) revert();
+
+        IERC20(stablecoin.current).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        IUserDB(dbAddress.user).addBalance(toUserId, amount);
+    }
+
+    function withdrawFunds(
+        bool isArtist,
+        uint256 userId,
+        uint256 amount
+    ) external {
+        if (isArtist) {
+            if (IArtistDB(dbAddress.artist).getAddress(userId) != msg.sender)
+                revert();
+
+            if (IArtistDB(dbAddress.artist).getBalance(userId) < amount)
+                revert();
+
+            IArtistDB(dbAddress.artist).deductBalance(userId, amount);
+        } else {
+            if (IUserDB(dbAddress.user).getAddress(userId) != msg.sender)
+                revert();
+
+            if (IUserDB(dbAddress.user).getBalance(userId) < amount) revert();
+
+            IUserDB(dbAddress.user).deductBalance(userId, amount);
         }
+
+        IERC20(stablecoin.current).transfer(msg.sender, amount);
+    }
+
+    function proposeStablecoinAddressChange(
+        address newStablecoinAddress
+    ) external onlyOwner {
+        if (newStablecoinAddress == address(0)) revert();
+        stablecoin.proposed = newStablecoinAddress;
+        stablecoin.timeToExecute = block.timestamp + 1 days;
+    }
+
+    function cancelStablecoinAddressChange() external onlyOwner {
+        stablecoin.proposed = address(0);
+        stablecoin.timeToExecute = 0;
+    }
+
+    function executeStablecoinAddressChange() external onlyOwner {
+        if (
+            stablecoin.proposed == address(0) ||
+            block.timestamp < stablecoin.timeToExecute
+        ) revert();
+        stablecoin.current = stablecoin.proposed;
+        stablecoin.proposed = address(0);
+        stablecoin.timeToExecute = 0;
+    }
+
+    function withdrawCollectedFees(address to, uint256 amount) external onlyOwner {
+        if (amountCollectedInFees < amount) revert();
+        amountCollectedInFees -= amount;
+        IERC20(stablecoin.current).transfer(to, amount);
     }
 
     function getPriceWithFee(
@@ -434,6 +502,25 @@ contract Orchestrator is Ownable {
         ISongDB(dbAddress.song).transferOwnership(orchestratorAddressToMigrate);
         IUserDB(dbAddress.user).transferOwnership(orchestratorAddressToMigrate);
         newOrchestratorAddress = orchestratorAddressToMigrate;
+    }
+
+
+    function _executePayment(
+        uint256 userId,
+        uint256 artistId,
+        uint256 price
+    ) internal {
+        if (price != 0) {
+            uint256 userBalance = IUserDB(dbAddress.user).getBalance(userId);
+            (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(
+                price
+            );
+            if (userBalance < totalPrice) revert();
+
+            IUserDB(dbAddress.user).deductBalance(userId, totalPrice);
+            IUserDB(dbAddress.user).addBalance(artistId, price);
+            amountCollectedInFees += calculatedFee;
+        }
     }
 }
 /*
