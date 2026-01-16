@@ -7,7 +7,7 @@ import {SongDB} from "@shine/contracts/database/SongDB.sol";
 
 contract SongDB_test_unit_correct is Constants {
     function executeBeforeSetUp() internal override {
-        songDB = new SongDB(FAKE_ORCHESTRATOR.Address);
+        _songDB = new SongDB(FAKE_ORCHESTRATOR.Address);
     }
 
     function test_unit_correct_SongDB__register() public {
@@ -16,7 +16,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDs[1] = 3;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDs,
@@ -29,31 +29,31 @@ contract SongDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1 for the first song");
         assertEq(
-            songDB.getMetadata(assignedId).Title,
+            _songDB.getMetadata(assignedId).Title,
             "Song Title",
             "Song title should match the registered title"
         );
         assertEq(
             artistIDs,
-            songDB.getMetadata(assignedId).ArtistIDs,
+            _songDB.getMetadata(assignedId).ArtistIDs,
             "Artist IDs should match the registered artist IDs"
         );
         assertEq(
-            songDB.getMetadata(assignedId).MediaURI,
+            _songDB.getMetadata(assignedId).MediaURI,
             "ipfs://mediaURI",
             "Media URI should match the registered URI"
         );
         assertEq(
-            songDB.getMetadata(assignedId).MetadataURI,
+            _songDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match the registered URI"
         );
         assertTrue(
-            songDB.getMetadata(assignedId).CanBePurchased,
+            _songDB.getMetadata(assignedId).CanBePurchased,
             "Song should be purchasable"
         );
         assertEq(
-            songDB.getMetadata(assignedId).Price,
+            _songDB.getMetadata(assignedId).Price,
             500,
             "Price should match the registered price"
         );
@@ -68,7 +68,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDsAfter[0] = 4;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDsBefore,
@@ -77,7 +77,7 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
-        songDB.change(
+        _songDB.change(
             assignedId,
             "New Song Title",
             2,
@@ -90,31 +90,31 @@ contract SongDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            songDB.getMetadata(assignedId).Title,
+            _songDB.getMetadata(assignedId).Title,
             "New Song Title",
             "Song title should be updated to the new title"
         );
         assertEq(
             artistIDsAfter,
-            songDB.getMetadata(assignedId).ArtistIDs,
+            _songDB.getMetadata(assignedId).ArtistIDs,
             "Artist IDs should be updated to the new artist IDs"
         );
         assertEq(
-            songDB.getMetadata(assignedId).MediaURI,
+            _songDB.getMetadata(assignedId).MediaURI,
             "ipfs://newMediaURI",
             "Media URI should be updated to the new URI"
         );
         assertEq(
-            songDB.getMetadata(assignedId).MetadataURI,
+            _songDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated to the new URI"
         );
         assertFalse(
-            songDB.getMetadata(assignedId).CanBePurchased,
+            _songDB.getMetadata(assignedId).CanBePurchased,
             "Song should not be purchasable after update"
         );
         assertEq(
-            songDB.getMetadata(assignedId).Price,
+            _songDB.getMetadata(assignedId).Price,
             1000,
             "Price should be updated to the new price"
         );
@@ -126,7 +126,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDs[1] = 3;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDs,
@@ -135,14 +135,14 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
-        songDB.purchase(assignedId, 10);
+        _songDB.purchase(assignedId, 10);
         vm.stopPrank();
         assertTrue(
-            songDB.isBoughtByUser(assignedId, 10),
+            _songDB.isBoughtByUser(assignedId, 10),
             "Song should be marked as bought by user ID 10"
         );
         assertEq(
-            songDB.getMetadata(assignedId).TimesBought,
+            _songDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
         );
@@ -154,7 +154,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDs[1] = 3;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDs,
@@ -163,15 +163,15 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
-        songDB.purchase(assignedId, 10);
-        songDB.refund(assignedId, 10);
+        _songDB.purchase(assignedId, 10);
+        _songDB.refund(assignedId, 10);
         vm.stopPrank();
         assertFalse(
-            songDB.isBoughtByUser(assignedId, 10),
+            _songDB.isBoughtByUser(assignedId, 10),
             "Song should not be marked as bought by user ID 10 after refund"
         );
         assertEq(
-            songDB.getMetadata(assignedId).TimesBought,
+            _songDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should be decremented to 0 after refund"
         );
@@ -183,7 +183,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDs[1] = 3;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDs,
@@ -192,10 +192,10 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
-        songDB.changePurchaseability(assignedId, false);
+        _songDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
         assertFalse(
-            songDB.getMetadata(assignedId).CanBePurchased,
+            _songDB.getMetadata(assignedId).CanBePurchased,
             "Song purchaseability should be updated to false"
         );
     }
@@ -206,7 +206,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDs[1] = 3;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDs,
@@ -215,10 +215,10 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
-        songDB.changePrice(assignedId, 1000);
+        _songDB.changePrice(assignedId, 1000);
         vm.stopPrank();
         assertEq(
-            songDB.getMetadata(assignedId).Price,
+            _songDB.getMetadata(assignedId).Price,
             1000,
             "Song price should be updated to 1000"
         );
@@ -230,7 +230,7 @@ contract SongDB_test_unit_correct is Constants {
         artistIDs[1] = 3;
         
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = songDB.register(
+        uint256 assignedId = _songDB.register(
             "Song Title",
             1,
             artistIDs,
@@ -239,10 +239,10 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
-        songDB.setBannedStatus(assignedId, true);
+        _songDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
         assertTrue(
-            songDB.getMetadata(assignedId).IsBanned,
+            _songDB.getMetadata(assignedId).IsBanned,
             "Song should be marked as banned"
         );
     }

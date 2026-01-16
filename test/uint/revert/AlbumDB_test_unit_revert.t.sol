@@ -8,7 +8,7 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract AlbumDB_test_unit_revert is Constants {
     function executeBeforeSetUp() internal override {
-        albumDB = new AlbumDB(FAKE_ORCHESTRATOR.Address);
+        _albumDB = new AlbumDB(FAKE_ORCHESTRATOR.Address);
     }
 
     function test_unit_revert_AlbumDB__register__Unauthorized() public {
@@ -20,7 +20,7 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.startPrank(USER.Address);
 
         vm.expectRevert(Ownable.Unauthorized.selector);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -43,7 +43,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -58,11 +58,11 @@ contract AlbumDB_test_unit_revert is Constants {
 
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
         );
@@ -75,7 +75,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -86,13 +86,13 @@ contract AlbumDB_test_unit_revert is Constants {
             "",
             0
         );
-        albumDB.setBannedStatus(assignedId, true);
+        _albumDB.setBannedStatus(assignedId, true);
         vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
         );
@@ -101,11 +101,11 @@ contract AlbumDB_test_unit_revert is Constants {
     function test_unit_revert_AlbumDB__purchase__AlbumDoesNotExist() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
-        albumDB.purchase(9999, 1234);
+        _albumDB.purchase(9999, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(9999).TimesBought,
+            _albumDB.getMetadata(9999).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
         );
@@ -118,7 +118,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -129,13 +129,13 @@ contract AlbumDB_test_unit_revert is Constants {
             "",
             0
         );
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.expectRevert(AlbumDB.UserBoughtAlbum.selector);
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be 1 after first purchase"
         );
@@ -148,7 +148,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -160,11 +160,11 @@ contract AlbumDB_test_unit_revert is Constants {
             0
         );
         vm.expectRevert(AlbumDB.AlbumNotPurchasable.selector);
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
         );
@@ -179,7 +179,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -191,13 +191,13 @@ contract AlbumDB_test_unit_revert is Constants {
             // he he c:
             1
         );
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.expectRevert(AlbumDB.AlbumMaxSupplyReached.selector);
-        albumDB.purchase(assignedId, 5678);
+        _albumDB.purchase(assignedId, 5678);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should remain 1 due to revert"
         );
@@ -210,7 +210,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -221,15 +221,15 @@ contract AlbumDB_test_unit_revert is Constants {
             "",
             0
         );
-        albumDB.purchase(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        albumDB.refund(assignedId, 1234);
+        _albumDB.refund(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be 1 because of revert"
         );
@@ -238,11 +238,11 @@ contract AlbumDB_test_unit_revert is Constants {
     function test_unit_revert_AlbumDB__refund__AlbunDoesNotExist() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
-        albumDB.refund(9999, 1234);
+        _albumDB.refund(9999, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(9999).TimesBought,
+            _albumDB.getMetadata(9999).TimesBought,
             0,
             "Times bought should be 0 because of revert"
         );
@@ -255,7 +255,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -267,11 +267,11 @@ contract AlbumDB_test_unit_revert is Constants {
             0
         );
         vm.expectRevert(AlbumDB.UserNotBoughtAlbum.selector);
-        albumDB.refund(assignedId, 1234);
+        _albumDB.refund(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should be 0 because of revert"
         );
@@ -288,7 +288,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDsAfter[1] = 21;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -302,7 +302,7 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        albumDB.change(
+        _albumDB.change(
             assignedId,
             "New Album Title",
             2,
@@ -317,42 +317,42 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).Title,
+            _albumDB.getMetadata(assignedId).Title,
             "Album Title",
             "Title should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).PrincipalArtistId,
+            _albumDB.getMetadata(assignedId).PrincipalArtistId,
             1,
             "PrincipalArtistId should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MetadataURI,
+            _albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "MetadataURI should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MusicIds.length,
+            _albumDB.getMetadata(assignedId).MusicIds.length,
             3,
             "MusicIds length should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).IsASpecialEdition,
+            _albumDB.getMetadata(assignedId).IsASpecialEdition,
             false,
             "IsASpecialEdition should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).SpecialEditionName,
+            _albumDB.getMetadata(assignedId).SpecialEditionName,
             "",
             "SpecialEditionName should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
+            _albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             0,
             "MaxSupplySpecialEdition should be the same due to revert"
         );
@@ -369,7 +369,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDsAfter[1] = 21;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -380,10 +380,10 @@ contract AlbumDB_test_unit_revert is Constants {
             "",
             0
         );
-        albumDB.setBannedStatus(assignedId, true);
+        _albumDB.setBannedStatus(assignedId, true);
 
         vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
-        albumDB.change(
+        _albumDB.change(
             assignedId,
             "New Album Title",
             2,
@@ -398,42 +398,42 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).Title,
+            _albumDB.getMetadata(assignedId).Title,
             "Album Title",
             "Title should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).PrincipalArtistId,
+            _albumDB.getMetadata(assignedId).PrincipalArtistId,
             1,
             "PrincipalArtistId should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MetadataURI,
+            _albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "MetadataURI should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MusicIds.length,
+            _albumDB.getMetadata(assignedId).MusicIds.length,
             3,
             "MusicIds length should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).IsASpecialEdition,
+            _albumDB.getMetadata(assignedId).IsASpecialEdition,
             false,
             "IsASpecialEdition should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).SpecialEditionName,
+            _albumDB.getMetadata(assignedId).SpecialEditionName,
             "",
             "SpecialEditionName should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
+            _albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             0,
             "MaxSupplySpecialEdition should be the same due to revert"
         );
@@ -446,7 +446,7 @@ contract AlbumDB_test_unit_revert is Constants {
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
-        albumDB.change(
+        _albumDB.change(
             9999,
             "New Album Title",
             2,
@@ -461,7 +461,7 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(9999).MaxSupplySpecialEdition,
+            _albumDB.getMetadata(9999).MaxSupplySpecialEdition,
             0,
             "MaxSupplySpecialEdition should be 0 due to revert"
         );
@@ -478,7 +478,7 @@ contract AlbumDB_test_unit_revert is Constants {
         uint256[] memory listOfSongIDsAfter = new uint256[](0);
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -491,7 +491,7 @@ contract AlbumDB_test_unit_revert is Constants {
         );
 
         vm.expectRevert(AlbumDB.AlbumCannotHaveZeroSongs.selector);
-        albumDB.change(
+        _albumDB.change(
             assignedId,
             "New Album Title",
             2,
@@ -506,42 +506,42 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).Title,
+            _albumDB.getMetadata(assignedId).Title,
             "Album Title",
             "Title should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).PrincipalArtistId,
+            _albumDB.getMetadata(assignedId).PrincipalArtistId,
             1,
             "PrincipalArtistId should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MetadataURI,
+            _albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "MetadataURI should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MusicIds.length,
+            _albumDB.getMetadata(assignedId).MusicIds.length,
             3,
             "MusicIds length should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).IsASpecialEdition,
+            _albumDB.getMetadata(assignedId).IsASpecialEdition,
             false,
             "IsASpecialEdition should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).SpecialEditionName,
+            _albumDB.getMetadata(assignedId).SpecialEditionName,
             "",
             "SpecialEditionName should be the same due to revert"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
+            _albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             0,
             "MaxSupplySpecialEdition should be the same due to revert"
         );
@@ -556,7 +556,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -570,11 +570,11 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        albumDB.changePurchaseability(assignedId, false);
+        _albumDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
 
         assertTrue(
-            albumDB.isPurchasable(assignedId),
+            _albumDB.isPurchasable(assignedId),
             "Album should remain purchasable due to revert"
         );
     }
@@ -588,7 +588,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -599,10 +599,10 @@ contract AlbumDB_test_unit_revert is Constants {
             "",
             0
         );
-        albumDB.setBannedStatus(assignedId, true);
+        _albumDB.setBannedStatus(assignedId, true);
 
         vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
-        albumDB.changePurchaseability(assignedId, false);
+        _albumDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
     }
 
@@ -611,7 +611,7 @@ contract AlbumDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
-        albumDB.changePurchaseability(9999, false);
+        _albumDB.changePurchaseability(9999, false);
         vm.stopPrank();
     }
 
@@ -622,7 +622,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -636,10 +636,10 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        albumDB.changePrice(assignedId, 67);
+        _albumDB.changePrice(assignedId, 67);
         vm.stopPrank();
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should be the same due to revert"
         );
@@ -652,7 +652,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -663,12 +663,12 @@ contract AlbumDB_test_unit_revert is Constants {
             "",
             0
         );
-        albumDB.setBannedStatus(assignedId, true);
+        _albumDB.setBannedStatus(assignedId, true);
         vm.expectRevert(AlbumDB.AlbumIsBanned.selector);
-        albumDB.changePrice(assignedId, 67);
+        _albumDB.changePrice(assignedId, 67);
         vm.stopPrank();
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should be the same due to revert"
         );
@@ -677,11 +677,11 @@ contract AlbumDB_test_unit_revert is Constants {
     function test_unit_revert_AlbumDB__changePrice__AlbumDoesNotExist() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
-        albumDB.changePrice(9999, 67);
+        _albumDB.changePrice(9999, 67);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(9999).Price,
+            _albumDB.getMetadata(9999).Price,
             0,
             "Price should be 0 due to revert"
         );
@@ -694,7 +694,7 @@ contract AlbumDB_test_unit_revert is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -708,10 +708,10 @@ contract AlbumDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        albumDB.setBannedStatus(assignedId, true);
+        _albumDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
         assertFalse(
-            albumDB.getMetadata(assignedId).IsBanned,
+            _albumDB.getMetadata(assignedId).IsBanned,
             "Album should remain unbanned due to revert"
         );
     }
@@ -721,11 +721,11 @@ contract AlbumDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(AlbumDB.AlbumDoesNotExist.selector);
-        albumDB.setBannedStatus(9999, true);
+        _albumDB.setBannedStatus(9999, true);
         vm.stopPrank();
 
         assertFalse(
-            albumDB.getMetadata(9999).IsBanned,
+            _albumDB.getMetadata(9999).IsBanned,
             "Album should remain unbanned due to revert"
         );
     }

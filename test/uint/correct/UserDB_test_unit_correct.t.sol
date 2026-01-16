@@ -7,12 +7,12 @@ import {UserDB} from "@shine/contracts/database/UserDB.sol";
 
 contract UserDB_test_unit_correct is Constants {
     function executeBeforeSetUp() internal override {
-        userDB = new UserDB(FAKE_ORCHESTRATOR.Address);
+        _userDB = new UserDB(FAKE_ORCHESTRATOR.Address);
     }
 
     function test_unit_correct_UserDB__register() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
@@ -21,27 +21,27 @@ contract UserDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1 for the first user");
         assertEq(
-            userDB.getMetadata(assignedId).Username,
+            _userDB.getMetadata(assignedId).Username,
             "User Name",
             "Username should match the registered name"
         );
         assertEq(
-            userDB.getMetadata(assignedId).MetadataURI,
+            _userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match the registered URI"
         );
         assertEq(
-            userDB.getMetadata(assignedId).Address,
+            _userDB.getMetadata(assignedId).Address,
             USER.Address,
             "User address should match the registered address"
         );
         assertEq(
-            userDB.getMetadata(assignedId).PurchasedSongIds.length,
+            _userDB.getMetadata(assignedId).PurchasedSongIds.length,
             0,
             "Purchased song IDs should be initialized to an empty array"
         );
         assertEq(
-            userDB.getMetadata(assignedId).Balance,
+            _userDB.getMetadata(assignedId).Balance,
             0,
             "Balance should be initialized to 0"
         );
@@ -49,12 +49,12 @@ contract UserDB_test_unit_correct is Constants {
 
     function test_unit_correct_UserDB__changeBasicData() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.changeBasicData(
+        _userDB.changeBasicData(
             assignedId,
             "New User Name",
             "ipfs://newMetadataURI"
@@ -62,12 +62,12 @@ contract UserDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Username,
+            _userDB.getMetadata(assignedId).Username,
             "New User Name",
             "Username should be updated correctly"
         );
         assertEq(
-            userDB.getMetadata(assignedId).MetadataURI,
+            _userDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated correctly"
         );
@@ -75,26 +75,26 @@ contract UserDB_test_unit_correct is Constants {
 
     function test_unit_correct_UserDB__changeAddress() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.changeAddress(assignedId, address(67));
+        _userDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Address,
+            _userDB.getMetadata(assignedId).Address,
             address(67),
             "User address should be updated correctly"
         );
         assertEq(
-            userDB.getId(address(67)),
+            _userDB.getId(address(67)),
             assignedId,
             "Address to ID mapping should be updated correctly"
         );
         assertEq(
-            userDB.getId(USER.Address),
+            _userDB.getId(USER.Address),
             0,
             "Old address should no longer map to any user ID"
         );
@@ -104,15 +104,15 @@ contract UserDB_test_unit_correct is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSong(assignedId, 101);
+        _userDB.addSong(assignedId, 101);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -138,16 +138,16 @@ contract UserDB_test_unit_correct is Constants {
         songsAfter[8] = 109;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSongs(assignedId, songsBefore);
-        userDB.deleteSong(assignedId, 104);
+        _userDB.addSongs(assignedId, songsBefore);
+        _userDB.deleteSong(assignedId, 104);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -162,15 +162,15 @@ contract UserDB_test_unit_correct is Constants {
             songsBefore[i] = i + 100;
         }
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSongs(assignedId, songsBefore);
+        _userDB.addSongs(assignedId, songsBefore);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -201,16 +201,16 @@ contract UserDB_test_unit_correct is Constants {
         songsToDelete[1] = 108;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSongs(assignedId, songsBefore);
-        userDB.deleteSongs(assignedId, songsToDelete);
+        _userDB.addSongs(assignedId, songsBefore);
+        _userDB.deleteSongs(assignedId, songsToDelete);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -223,16 +223,16 @@ contract UserDB_test_unit_correct is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addBalance(assignedId, 100);
+        _userDB.addBalance(assignedId, 100);
         vm.stopPrank();
 
         assertEq(
-            userDB.getBalance(assignedId),
+            _userDB.getBalance(assignedId),
             100,
             "Balance should be updated correctly"
         );
@@ -242,17 +242,17 @@ contract UserDB_test_unit_correct is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addBalance(assignedId, 100);
-        userDB.deductBalance(assignedId, 50);
+        _userDB.addBalance(assignedId, 100);
+        _userDB.deductBalance(assignedId, 50);
         vm.stopPrank();
 
         assertEq(
-            userDB.getBalance(assignedId),
+            _userDB.getBalance(assignedId),
             50,
             "Balance should be updated correctly"
         );
@@ -260,16 +260,16 @@ contract UserDB_test_unit_correct is Constants {
 
     function test_unit_correct_UserDB__setBannedStatus() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
 
         assertTrue(
-            userDB.getMetadata(assignedId).IsBanned,
+            _userDB.getMetadata(assignedId).IsBanned,
             "User should be marked as banned"
         );
     }

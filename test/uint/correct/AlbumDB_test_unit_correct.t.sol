@@ -7,7 +7,7 @@ import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 
 contract AlbumDB_test_unit_correct is Constants {
     function executeBeforeSetUp() internal override {
-        albumDB = new AlbumDB(FAKE_ORCHESTRATOR.Address);
+        _albumDB = new AlbumDB(FAKE_ORCHESTRATOR.Address);
     }
 
     function test_unit_correct_AlbumDB__register() public {
@@ -17,7 +17,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -32,45 +32,45 @@ contract AlbumDB_test_unit_correct is Constants {
 
         assertEq(assignedId, 1, "Assigned ID should be 1");
         assertEq(
-            albumDB.getMetadata(assignedId).Title,
+            _albumDB.getMetadata(assignedId).Title,
             "Album Title",
             "Album title should match"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).PrincipalArtistId,
+            _albumDB.getMetadata(assignedId).PrincipalArtistId,
             1,
             "Principal artist ID should match"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MetadataURI,
+            _albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should match"
         );
         assertEq(
             listOfSongIDs,
-            albumDB.getMetadata(assignedId).MusicIds,
+            _albumDB.getMetadata(assignedId).MusicIds,
             "Song IDs should match"
         );
         assertTrue(
-            albumDB.isPurchasable(assignedId),
+            _albumDB.isPurchasable(assignedId),
             "Album should be purchasable"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             1000,
             "Price should match"
         );
         assertFalse(
-            albumDB.getMetadata(assignedId).IsASpecialEdition,
+            _albumDB.getMetadata(assignedId).IsASpecialEdition,
             "Should not be a special edition"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).SpecialEditionName,
+            _albumDB.getMetadata(assignedId).SpecialEditionName,
             "",
             "Special edition name should be empty"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
+            _albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             0,
             "Max supply for special edition should be 0"
         );
@@ -83,7 +83,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -94,7 +94,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
-        uint256[] memory purchasedSongIDs = albumDB.purchase(assignedId, 1234);
+        uint256[] memory purchasedSongIDs = _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
@@ -103,7 +103,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "Purchased song IDs should match the registered ones"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
         );
@@ -116,7 +116,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -128,7 +128,7 @@ contract AlbumDB_test_unit_correct is Constants {
             67
             // he he c:
         );
-        uint256[] memory purchasedSongIDs = albumDB.purchase(assignedId, 1234);
+        uint256[] memory purchasedSongIDs = _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
@@ -137,7 +137,7 @@ contract AlbumDB_test_unit_correct is Constants {
             "Purchased song IDs should match the registered ones"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
         );
@@ -150,7 +150,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -161,12 +161,12 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
-        albumDB.purchase(assignedId, 1234);
-        albumDB.refund(assignedId, 1234);
+        _albumDB.purchase(assignedId, 1234);
+        _albumDB.refund(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).TimesBought,
+            _albumDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should be decremented to 0"
         );
@@ -183,7 +183,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDsAfter[1] = 21;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -195,7 +195,7 @@ contract AlbumDB_test_unit_correct is Constants {
             0
         );
 
-        albumDB.change(
+        _albumDB.change(
             assignedId,
             "New Album Title",
             2,
@@ -210,45 +210,45 @@ contract AlbumDB_test_unit_correct is Constants {
         vm.stopPrank();
 
         assertEq(
-            albumDB.getMetadata(assignedId).Title,
+            _albumDB.getMetadata(assignedId).Title,
             "New Album Title",
             "Album title should be updated"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).PrincipalArtistId,
+            _albumDB.getMetadata(assignedId).PrincipalArtistId,
             2,
             "Principal artist ID should be updated"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MetadataURI,
+            _albumDB.getMetadata(assignedId).MetadataURI,
             "ipfs://newMetadataURI",
             "Metadata URI should be updated"
         );
         assertEq(
             listOfSongIDsAfter,
-            albumDB.getMetadata(assignedId).MusicIds,
+            _albumDB.getMetadata(assignedId).MusicIds,
             "Song IDs should be updated"
         );
         assertTrue(
-            albumDB.isPurchasable(assignedId),
+            _albumDB.isPurchasable(assignedId),
             "Album should be purchasable"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             2000,
             "Price should be updated"
         );
         assertTrue(
-            albumDB.getMetadata(assignedId).IsASpecialEdition,
+            _albumDB.getMetadata(assignedId).IsASpecialEdition,
             "Should be a special edition"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).SpecialEditionName,
+            _albumDB.getMetadata(assignedId).SpecialEditionName,
             "Special Ultra Turbo Deluxe Edition Remaster Battle Royale with Banjo-Kazooie & Nnuckles NEW Funky Mode (Featuring Dante from Devil May Cry Series)",
             "Special edition name should be updated"
         );
         assertEq(
-            albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
+            _albumDB.getMetadata(assignedId).MaxSupplySpecialEdition,
             67,
             "Max supply for special edition should be updated"
         );
@@ -261,7 +261,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -272,10 +272,10 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
-        albumDB.changePurchaseability(assignedId, false);
+        _albumDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
         assertFalse(
-            albumDB.isPurchasable(assignedId),
+            _albumDB.isPurchasable(assignedId),
             "Album should not be purchasable"
         );
     }
@@ -287,7 +287,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -298,10 +298,10 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
-        albumDB.changePrice(assignedId, 67);
+        _albumDB.changePrice(assignedId, 67);
         vm.stopPrank();
         assertEq(
-            albumDB.getMetadata(assignedId).Price,
+            _albumDB.getMetadata(assignedId).Price,
             67,
             "Price should be updated"
         );
@@ -314,7 +314,7 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = albumDB.register(
+        uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
             "ipfs://metadataURI",
@@ -325,10 +325,10 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
-        albumDB.setBannedStatus(assignedId, true);
+        _albumDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
         assertTrue(
-            albumDB.getMetadata(assignedId).IsBanned,
+            _albumDB.getMetadata(assignedId).IsBanned,
             "Album should be banned"
         );
     }

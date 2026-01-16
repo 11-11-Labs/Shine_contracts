@@ -8,13 +8,13 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract UserDB_test_unit_revert is Constants {
     function executeBeforeSetUp() internal override {
-        userDB = new UserDB(FAKE_ORCHESTRATOR.Address);
+        _userDB = new UserDB(FAKE_ORCHESTRATOR.Address);
     }
 
     function test_unit_revert_UserDB__register__Unauthorized() public {
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
@@ -22,7 +22,7 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Username,
+            _userDB.getMetadata(assignedId).Username,
             "",
             "Username should be empty after revert"
         );
@@ -30,7 +30,7 @@ contract UserDB_test_unit_revert is Constants {
 
     function test_unit_revert_UserDB__changeBasicData__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
@@ -38,7 +38,7 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        userDB.changeBasicData(
+        _userDB.changeBasicData(
             assignedId,
             "New User Name",
             "ipfs://newMetadataURI"
@@ -46,7 +46,7 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Username,
+            _userDB.getMetadata(assignedId).Username,
             "User Name",
             "Username should be unchanged after revert"
         );
@@ -56,25 +56,25 @@ contract UserDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(UserDB.UserDoesNotExist.selector);
-        userDB.changeBasicData(1, "New User Name", "ipfs://newMetadataURI");
+        _userDB.changeBasicData(1, "New User Name", "ipfs://newMetadataURI");
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(1).Username,
+            _userDB.getMetadata(1).Username,
             "",
             "Username should be empty after revert"
         );
     }
     function test_unit_revert_UserDB__changeBasicData__UserIsBanned() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.setBannedStatus(assignedId, true);
         vm.expectRevert(UserDB.UserIsBanned.selector);
-        userDB.changeBasicData(
+        _userDB.changeBasicData(
             assignedId,
             "New User Name",
             "ipfs://newMetadataURI"
@@ -82,7 +82,7 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Username,
+            _userDB.getMetadata(assignedId).Username,
             "User Name",
             "Username should be unchanged after revert"
         );
@@ -91,17 +91,17 @@ contract UserDB_test_unit_revert is Constants {
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
         vm.expectRevert(UserDB.UsernameIsEmpty.selector);
-        userDB.changeBasicData(assignedId, "", "ipfs://newMetadataURI");
+        _userDB.changeBasicData(assignedId, "", "ipfs://newMetadataURI");
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Username,
+            _userDB.getMetadata(assignedId).Username,
             "User Name",
             "Username should be unchanged after revert"
         );
@@ -109,7 +109,7 @@ contract UserDB_test_unit_revert is Constants {
 
     function test_unit_revert_UserDB__changeAddress__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
@@ -117,11 +117,11 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        userDB.changeAddress(assignedId, address(67));
+        _userDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Address,
+            _userDB.getMetadata(assignedId).Address,
             USER.Address,
             "User address should be unchanged after revert"
         );
@@ -130,11 +130,11 @@ contract UserDB_test_unit_revert is Constants {
     function test_unit_revert_UserDB__changeAddress__UserDoesNotExist() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(UserDB.UserDoesNotExist.selector);
-        userDB.changeAddress(1, address(67));
+        _userDB.changeAddress(1, address(67));
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(1).Address,
+            _userDB.getMetadata(1).Address,
             address(0),
             "User address should be address(0) after revert"
         );
@@ -142,18 +142,18 @@ contract UserDB_test_unit_revert is Constants {
 
     function test_unit_revert_UserDB__changeAddress__UserIsBanned() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.setBannedStatus(assignedId, true);
         vm.expectRevert(UserDB.UserIsBanned.selector);
-        userDB.changeAddress(assignedId, address(67));
+        _userDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
 
         assertEq(
-            userDB.getMetadata(assignedId).Address,
+            _userDB.getMetadata(assignedId).Address,
             USER.Address,
             "User address should be unchanged after revert"
         );
@@ -163,7 +163,7 @@ contract UserDB_test_unit_revert is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
@@ -171,11 +171,11 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        userDB.addSong(assignedId, 101);
+        _userDB.addSong(assignedId, 101);
         vm.stopPrank();
 
         assertEq(
-            userDB.getPurchasedSong(assignedId).length,
+            _userDB.getPurchasedSong(assignedId).length,
             0,
             "Purchased song IDs array should be empty after revert"
         );
@@ -186,11 +186,11 @@ contract UserDB_test_unit_revert is Constants {
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(UserDB.UserDoesNotExist.selector);
-        userDB.addSong(1, 101);
+        _userDB.addSong(1, 101);
         vm.stopPrank();
 
         assertEq(
-            userDB.getPurchasedSong(1).length,
+            _userDB.getPurchasedSong(1).length,
             0,
             "Purchased song IDs array should be empty after revert"
         );
@@ -200,18 +200,18 @@ contract UserDB_test_unit_revert is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.setBannedStatus(assignedId, true);
         vm.expectRevert(UserDB.UserIsBanned.selector);
-        userDB.addSong(assignedId, 101);
+        _userDB.addSong(assignedId, 101);
         vm.stopPrank();
 
         assertEq(
-            userDB.getPurchasedSong(assignedId).length,
+            _userDB.getPurchasedSong(assignedId).length,
             0,
             "Purchased song IDs array should be empty after revert"
         );
@@ -234,19 +234,19 @@ contract UserDB_test_unit_revert is Constants {
         songsAfter[8] = 109;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSongs(assignedId, songsBefore);
+        _userDB.addSongs(assignedId, songsBefore);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        userDB.deleteSong(assignedId, 104);
+        _userDB.deleteSong(assignedId, 104);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -269,7 +269,7 @@ contract UserDB_test_unit_revert is Constants {
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(UserDB.UserDoesNotExist.selector);
-        userDB.deleteSong(1, 104);
+        _userDB.deleteSong(1, 104);
         vm.stopPrank();
     }
 
@@ -290,18 +290,18 @@ contract UserDB_test_unit_revert is Constants {
         songsAfter[8] = 109;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSongs(assignedId, songsBefore);
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.addSongs(assignedId, songsBefore);
+        _userDB.setBannedStatus(assignedId, true);
         vm.expectRevert(UserDB.UserIsBanned.selector);
-        userDB.deleteSong(assignedId, 104);
+        _userDB.deleteSong(assignedId, 104);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -316,7 +316,7 @@ contract UserDB_test_unit_revert is Constants {
             songsBefore[i] = i + 100;
         }
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
@@ -324,11 +324,11 @@ contract UserDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        userDB.addSongs(assignedId, songsBefore);
+        _userDB.addSongs(assignedId, songsBefore);
         vm.stopPrank();
 
         assertEq(
-            userDB.getPurchasedSong(assignedId).length,
+            _userDB.getPurchasedSong(assignedId).length,
             0,
             "Purchased song IDs array should be empty after revert"
         );
@@ -340,18 +340,18 @@ contract UserDB_test_unit_revert is Constants {
             songsBefore[i] = i + 100;
         }
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.setBannedStatus(assignedId, true);
         vm.expectRevert(UserDB.UserIsBanned.selector);
-        userDB.addSongs(assignedId, songsBefore);
+        _userDB.addSongs(assignedId, songsBefore);
         vm.stopPrank();
 
         assertEq(
-            userDB.getPurchasedSong(assignedId).length,
+            _userDB.getPurchasedSong(assignedId).length,
             0,
             "Purchased song IDs array should be empty after revert"
         );
@@ -364,11 +364,11 @@ contract UserDB_test_unit_revert is Constants {
         }
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(UserDB.UserDoesNotExist.selector);
-        userDB.addSongs(1, songsBefore);
+        _userDB.addSongs(1, songsBefore);
         vm.stopPrank();
 
         assertEq(
-            userDB.getPurchasedSong(1).length,
+            _userDB.getPurchasedSong(1).length,
             0,
             "Purchased song IDs array should be empty after revert"
         );
@@ -403,16 +403,16 @@ contract UserDB_test_unit_revert is Constants {
         songsToDelete[1] = 108;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addSongs(assignedId, songsBefore);
-        userDB.deleteSongs(assignedId, songsToDelete);
+        _userDB.addSongs(assignedId, songsBefore);
+        _userDB.deleteSongs(assignedId, songsToDelete);
         vm.stopPrank();
 
-        uint256[] memory purchasedSongs = userDB.getPurchasedSong(assignedId);
+        uint256[] memory purchasedSongs = _userDB.getPurchasedSong(assignedId);
 
         assertEq(
             purchasedSongs,
@@ -425,16 +425,16 @@ contract UserDB_test_unit_revert is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addBalance(assignedId, 100);
+        _userDB.addBalance(assignedId, 100);
         vm.stopPrank();
 
         assertEq(
-            userDB.getBalance(assignedId),
+            _userDB.getBalance(assignedId),
             100,
             "Balance should be updated correctly"
         );
@@ -444,17 +444,17 @@ contract UserDB_test_unit_revert is Constants {
         uint256[] memory songs = new uint256[](1);
         songs[0] = 101;
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.addBalance(assignedId, 100);
-        userDB.deductBalance(assignedId, 50);
+        _userDB.addBalance(assignedId, 100);
+        _userDB.deductBalance(assignedId, 50);
         vm.stopPrank();
 
         assertEq(
-            userDB.getBalance(assignedId),
+            _userDB.getBalance(assignedId),
             50,
             "Balance should be updated correctly"
         );
@@ -462,16 +462,16 @@ contract UserDB_test_unit_revert is Constants {
 
     function test_unit_revert_UserDB__setBannedStatus() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = userDB.register(
+        uint256 assignedId = _userDB.register(
             "User Name",
             "ipfs://metadataURI",
             USER.Address
         );
-        userDB.setBannedStatus(assignedId, true);
+        _userDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
 
         assertTrue(
-            userDB.getMetadata(assignedId).IsBanned,
+            _userDB.getMetadata(assignedId).IsBanned,
             "User should be marked as banned"
         );
     }

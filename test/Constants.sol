@@ -6,9 +6,16 @@ import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
 import {SongDB} from "@shine/contracts/database/SongDB.sol";
 import {UserDB} from "@shine/contracts/database/UserDB.sol";
-import {Orchestrator} from "@shine/contracts/Orchestrator.sol";
+import {Orchestrator} from "@shine/contracts/orchestrator/Orchestrator.sol";
 
 abstract contract Constants is Test {
+    ///@dev this are the contract instances used in separate tests 
+    AlbumDB _albumDB;
+    ArtistDB _artistDB;
+    SongDB _songDB;
+    UserDB _userDB;
+
+    ///@dev these are the contract instances used in conjunction with orchestrator
     AlbumDB albumDB;
     ArtistDB artistDB;
     SongDB songDB;
@@ -76,6 +83,7 @@ abstract contract Constants is Test {
     AccountData ARTIST = ACCOUNT6;
 
     function setUp() public {
+        
         executeBeforeSetUp();
     }
 

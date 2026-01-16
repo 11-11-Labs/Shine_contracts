@@ -8,37 +8,37 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract ArtistDB_test_unit_revert is Constants {
     function executeBeforeSetUp() internal override {
-        artistDB = new ArtistDB(FAKE_ORCHESTRATOR.Address);
+        _artistDB = new ArtistDB(FAKE_ORCHESTRATOR.Address);
     }
 
     function test_unit_revert_ArtistDB__register__Unauthorized() public {
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.register("Artist Name", "ipfs://metadataURI", ARTIST.Address);
+        _artistDB.register("Artist Name", "ipfs://metadataURI", ARTIST.Address);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(1).Name,
+            _artistDB.getMetadata(1).Name,
             "",
             "Artist name should be empty due to revert"
         );
         assertEq(
-            artistDB.getMetadata(1).MetadataURI,
+            _artistDB.getMetadata(1).MetadataURI,
             "",
             "Metadata URI should be empty due to revert"
         );
         assertEq(
-            artistDB.getMetadata(1).Address,
+            _artistDB.getMetadata(1).Address,
             address(0),
             "Artist address should be address(0) due to revert"
         );
         assertEq(
-            artistDB.getMetadata(1).Balance,
+            _artistDB.getMetadata(1).Balance,
             0,
             "Total earnings should be initialized to 0 due to revert"
         );
         assertEq(
-            artistDB.getMetadata(1).AccumulatedRoyalties,
+            _artistDB.getMetadata(1).AccumulatedRoyalties,
             0,
             "Accumulated royalties should be initialized to 0 due to revert"
         );
@@ -46,7 +46,7 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__changeBasicData__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
@@ -54,19 +54,19 @@ contract ArtistDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.changeBasicData(
+        _artistDB.changeBasicData(
             assignedId,
             "New Artist Name",
             "ipfs://newMetadataURI"
         );
         vm.stopPrank();
         assertEq(
-            artistDB.getMetadata(assignedId).Name,
+            _artistDB.getMetadata(assignedId).Name,
             "Artist Name",
             "Artist name should not be updated due to revert"
         );
         assertEq(
-            artistDB.getMetadata(assignedId).MetadataURI,
+            _artistDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should not be updated due to revert"
         );
@@ -76,21 +76,21 @@ contract ArtistDB_test_unit_revert is Constants {
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
         vm.expectRevert(ArtistDB.NameShouldNotBeEmpty.selector);
-        artistDB.changeBasicData(assignedId, "", "ipfs://newMetadataURI");
+        _artistDB.changeBasicData(assignedId, "", "ipfs://newMetadataURI");
         vm.stopPrank();
         assertEq(
-            artistDB.getMetadata(assignedId).Name,
+            _artistDB.getMetadata(assignedId).Name,
             "Artist Name",
             "Artist name should not be updated due to revert"
         );
         assertEq(
-            artistDB.getMetadata(assignedId).MetadataURI,
+            _artistDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should not be updated due to revert"
         );
@@ -101,15 +101,15 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.changeBasicData(1, "New Artist Name", "ipfs://newMetadataURI");
+        _artistDB.changeBasicData(1, "New Artist Name", "ipfs://newMetadataURI");
         vm.stopPrank();
         assertEq(
-            artistDB.getMetadata(1).Name,
+            _artistDB.getMetadata(1).Name,
             "",
             "Artist name should not be updated due to revert"
         );
         assertEq(
-            artistDB.getMetadata(1).MetadataURI,
+            _artistDB.getMetadata(1).MetadataURI,
             "",
             "Metadata URI should not be updated due to revert"
         );
@@ -119,26 +119,26 @@ contract ArtistDB_test_unit_revert is Constants {
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.setBannedStatus(assignedId, true);
+        _artistDB.setBannedStatus(assignedId, true);
         vm.expectRevert(ArtistDB.ArtistIsBanned.selector);
-        artistDB.changeBasicData(
+        _artistDB.changeBasicData(
             assignedId,
             "New Artist Name",
             "ipfs://newMetadataURI"
         );
         vm.stopPrank();
         assertEq(
-            artistDB.getMetadata(assignedId).Name,
+            _artistDB.getMetadata(assignedId).Name,
             "Artist Name",
             "Artist name should not be updated due to revert"
         );
         assertEq(
-            artistDB.getMetadata(assignedId).MetadataURI,
+            _artistDB.getMetadata(assignedId).MetadataURI,
             "ipfs://metadataURI",
             "Metadata URI should not be updated due to revert"
         );
@@ -146,7 +146,7 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__changeAddress__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
@@ -154,16 +154,16 @@ contract ArtistDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.changeAddress(assignedId, address(67));
+        _artistDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).Address,
+            _artistDB.getMetadata(assignedId).Address,
             ARTIST.Address,
             "Artist address should be the same because revert occurred"
         );
         assertEq(
-            artistDB.getAddress(assignedId),
+            _artistDB.getAddress(assignedId),
             ARTIST.Address,
             "getAddress should return the original address because revert occurred"
         );
@@ -174,16 +174,16 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.changeAddress(1, address(67));
+        _artistDB.changeAddress(1, address(67));
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(1).Address,
+            _artistDB.getMetadata(1).Address,
             address(0),
             "Artist address should be return address(0) because revert occurred"
         );
         assertEq(
-            artistDB.getAddress(1),
+            _artistDB.getAddress(1),
             address(0),
             "getAddress should return address(0) because revert occurred"
         );
@@ -191,23 +191,23 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__changeAddress__ArtistIsBanned() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.setBannedStatus(assignedId, true);
+        _artistDB.setBannedStatus(assignedId, true);
         vm.expectRevert(ArtistDB.ArtistIsBanned.selector);
-        artistDB.changeAddress(assignedId, address(67));
+        _artistDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).Address,
+            _artistDB.getMetadata(assignedId).Address,
             ARTIST.Address,
             "Artist address should be the same because revert occurred"
         );
         assertEq(
-            artistDB.getAddress(assignedId),
+            _artistDB.getAddress(assignedId),
             ARTIST.Address,
             "getAddress should return the original address because revert occurred"
         );
@@ -215,7 +215,7 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__addBalance__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
@@ -223,11 +223,11 @@ contract ArtistDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.addBalance(assignedId, 1000);
+        _artistDB.addBalance(assignedId, 1000);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).Balance,
+            _artistDB.getMetadata(assignedId).Balance,
             0,
             "Balance should be unchanged due to revert"
         );
@@ -238,11 +238,11 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.addBalance(1, 1000);
+        _artistDB.addBalance(1, 1000);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(1).Balance,
+            _artistDB.getMetadata(1).Balance,
             0,
             "Balance should be unchanged due to revert"
         );
@@ -250,18 +250,18 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__addBalance__ArtistIsBanned() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.setBannedStatus(assignedId, true);
+        _artistDB.setBannedStatus(assignedId, true);
         vm.expectRevert(ArtistDB.ArtistIsBanned.selector);
-        artistDB.addBalance(assignedId, 1000);
+        _artistDB.addBalance(assignedId, 1000);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).Balance,
+            _artistDB.getMetadata(assignedId).Balance,
             0,
             "Balance should be unchanged due to revert"
         );
@@ -269,20 +269,20 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__deductBalance__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.addBalance(assignedId, 1000);
+        _artistDB.addBalance(assignedId, 1000);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.deductBalance(assignedId, 500);
+        _artistDB.deductBalance(assignedId, 500);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).Balance,
+            _artistDB.getMetadata(assignedId).Balance,
             1000,
             "Balance should be unchanged due to revert"
         );
@@ -293,11 +293,11 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.deductBalance(1, 500);
+        _artistDB.deductBalance(1, 500);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(1).Balance,
+            _artistDB.getMetadata(1).Balance,
             0,
             "Balance should be unchanged due to revert"
         );
@@ -307,7 +307,7 @@ contract ArtistDB_test_unit_revert is Constants {
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
@@ -315,11 +315,11 @@ contract ArtistDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.addAccumulatedRoyalties(assignedId, 1000);
+        _artistDB.addAccumulatedRoyalties(assignedId, 1000);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
+            _artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             0,
             "Accumulated royalties should be unchanged due to revert"
         );
@@ -330,11 +330,11 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.addAccumulatedRoyalties(1, 1000);
+        _artistDB.addAccumulatedRoyalties(1, 1000);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(1).AccumulatedRoyalties,
+            _artistDB.getMetadata(1).AccumulatedRoyalties,
             0,
             "Accumulated royalties should be unchanged due to revert"
         );
@@ -344,18 +344,18 @@ contract ArtistDB_test_unit_revert is Constants {
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.setBannedStatus(assignedId, true);
+        _artistDB.setBannedStatus(assignedId, true);
         vm.expectRevert(ArtistDB.ArtistIsBanned.selector);
-        artistDB.addAccumulatedRoyalties(assignedId, 1000);
+        _artistDB.addAccumulatedRoyalties(assignedId, 1000);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
+            _artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             0,
             "Accumulated royalties should be unchanged due to revert"
         );
@@ -365,20 +365,20 @@ contract ArtistDB_test_unit_revert is Constants {
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
         );
-        artistDB.addAccumulatedRoyalties(assignedId, 1000);
+        _artistDB.addAccumulatedRoyalties(assignedId, 1000);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.deductAccumulatedRoyalties(assignedId, 500);
+        _artistDB.deductAccumulatedRoyalties(assignedId, 500);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(assignedId).AccumulatedRoyalties,
+            _artistDB.getMetadata(assignedId).AccumulatedRoyalties,
             1000,
             "Accumulated royalties should be unchanged due to revert"
         );
@@ -389,11 +389,11 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.deductAccumulatedRoyalties(1, 500);
+        _artistDB.deductAccumulatedRoyalties(1, 500);
         vm.stopPrank();
 
         assertEq(
-            artistDB.getMetadata(1).AccumulatedRoyalties,
+            _artistDB.getMetadata(1).AccumulatedRoyalties,
             0,
             "Accumulated royalties should be unchanged due to revert"
         );
@@ -401,7 +401,7 @@ contract ArtistDB_test_unit_revert is Constants {
 
     function test_unit_revert_ArtistDB__setBannedStatus__Unauthorized() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = artistDB.register(
+        uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
             ARTIST.Address
@@ -409,11 +409,11 @@ contract ArtistDB_test_unit_revert is Constants {
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
-        artistDB.setBannedStatus(assignedId, true);
+        _artistDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
 
         assertFalse(
-            artistDB.getMetadata(assignedId).IsBanned,
+            _artistDB.getMetadata(assignedId).IsBanned,
             "Artist should be not banned due to revert"
         );
     }
@@ -423,11 +423,11 @@ contract ArtistDB_test_unit_revert is Constants {
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(ArtistDB.ArtistDoesNotExist.selector);
-        artistDB.setBannedStatus(1, true);
+        _artistDB.setBannedStatus(1, true);
         vm.stopPrank();
 
         assertFalse(
-            artistDB.getMetadata(1).IsBanned,
+            _artistDB.getMetadata(1).IsBanned,
             "Artist should be not banned due to revert"
         );
     }
