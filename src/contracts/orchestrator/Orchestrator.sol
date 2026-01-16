@@ -560,6 +560,30 @@ contract Orchestrator is Ownable {
         return (netPrice + fee, fee);
     }
 
+    function getAlbumDBAddress() external view returns (address) {
+        return dbAddress.album;
+    }
+
+    function getArtistDBAddress() external view returns (address) {
+        return dbAddress.artist;
+    }
+
+    function getSongDBAddress() external view returns (address) {
+        return dbAddress.song;
+    }
+
+    function getUserDBAddress() external view returns (address) {
+        return dbAddress.user;
+    }
+
+    function getDbAddresses()
+        external
+        view
+        returns (StructsLib.DataBaseList memory)
+    {
+        return dbAddress;
+    }
+
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Internal Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function _executePayment(
