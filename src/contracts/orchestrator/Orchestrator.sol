@@ -136,12 +136,12 @@ contract Orchestrator is Ownable {
         bool isArtist,
         string memory name,
         string memory metadataURI,
-        address artistAddress
+        address addressToUse
     ) external returns (uint256) {
         if (isArtist) {
-            return artistDB.register(name, metadataURI, artistAddress);
+            return artistDB.register(name, metadataURI, addressToUse);
         } else {
-            return userDB.register(name, metadataURI, artistAddress);
+            return userDB.register(name, metadataURI, addressToUse);
         }
     }
 
