@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
+import {ERC20} from "@solady/tokens/ERC20.sol";
 import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
 import {SongDB} from "@shine/contracts/database/SongDB.sol";
@@ -21,6 +22,8 @@ abstract contract Constants is Test {
     SongDB songDB;
     UserDB userDB;
     Orchestrator orchestrator;
+
+    MockUsdc usdc;
 
     struct AccountData {
         address Address;
@@ -83,9 +86,47 @@ abstract contract Constants is Test {
     AccountData ARTIST = ACCOUNT6;
 
     function setUp() public {
-        
+
+        usdc = new MockUsdc();
+
+        orchestrator = new Orchestrator(
+            ADMIN.Address,
+            address(usdc)
+        );
+
+        albumDB = new AlbumDB(address(orchestrator));
+        artistDB = new ArtistDB(address(orchestrator));
+        songDB = new SongDB(address(orchestrator));
+        userDB = new UserDB(address(orchestrator));
+
+        orchestrator.setDatabaseAddresses(
+            address(albumDB),
+            address(artistDB),
+            address(songDB),
+            address(userDB)
+        );        
+
+
         executeBeforeSetUp();
     }
 
     function executeBeforeSetUp() internal virtual {}
+}
+
+contract MockUsdc is ERC20 {
+    
+    function name() public pure override returns (string memory) {
+        return "USD Coin";
+    }
+
+    function symbol() public pure override returns (string memory) {
+        return "USDC";
+    }
+    function decimals() public pure override returns (uint8) {
+        return 6;
+    }
+
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
 }
