@@ -25,8 +25,6 @@ library ErrorsLib {
    error TitleCannotBeEmpty();
    error SpecialEditionNameCannotBeEmpty();
 
-   error AlbumIsASpecialEdition();
-   error AlbumIsNotASpecialEdition();
 
    error MustBeGreaterThanCurrent();
 
