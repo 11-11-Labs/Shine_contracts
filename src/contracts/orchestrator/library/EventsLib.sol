@@ -21,9 +21,25 @@ library EventsLib {
         uint256 price
     );
 
+    event SongGifted(
+        uint256 indexed songId,
+        uint256 indexed toUserId
+    );
+
     event AlbumPurchased(
         uint256 indexed albumId,
         uint256 indexed userId,
         uint256 price
+    );
+
+    event AlbumGifted(
+        uint256 indexed albumId,
+        uint256 indexed toUserId
+    );
+
+    event DonationMade(
+        uint256 indexed userId,
+        uint256 indexed artistId,
+        uint256 amount
     );
 }
