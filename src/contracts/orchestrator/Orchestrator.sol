@@ -91,9 +91,10 @@ contract Orchestrator is Ownable {
         userDB.addBalance(userId, amount);
     }
 
-    function giftFunds(uint256 toUserId, uint256 amount) external {
-        if (!userDB.exists(toUserId)) revert ErrorsLib.UserIdDoesNotExist();
-
+    function depositFundsToAnotherUser(
+        uint256 toUserId,
+        uint256 amount
+    ) external userIdExists(toUserId) {
         IERC20(stablecoin.current).transferFrom(
             msg.sender,
             address(this),
@@ -518,6 +519,26 @@ contract Orchestrator is Ownable {
         if (amountCollectedInFees < amount) revert();
         amountCollectedInFees -= amount;
         IERC20(stablecoin.current).transfer(to, amount);
+    }
+
+    function giveCollectedFeesToArtist(
+        uint256 artistId,
+        uint256 amount
+    ) external onlyOwner artistIdExists(artistId) {
+        if (amountCollectedInFees < amount) revert();
+
+        amountCollectedInFees -= amount;
+        artistDB.addBalance(artistId, amount);
+    }
+
+    function giveCollectedFeesToUser(
+        uint256 userId,
+        uint256 amount
+    ) external onlyOwner userIdExists(userId) {
+        if (amountCollectedInFees < amount) revert();
+
+        amountCollectedInFees -= amount;
+        userDB.addBalance(userId, amount);
     }
 
     function getAmountCollectedInFees()
