@@ -10,7 +10,7 @@ import {UserDB} from "@shine/contracts/database/UserDB.sol";
 import {Orchestrator} from "@shine/contracts/orchestrator/Orchestrator.sol";
 
 abstract contract Constants is Test {
-    ///@dev this are the contract instances used in separate tests 
+    ///@dev this are the contract instances used in separate tests
     AlbumDB _albumDB;
     ArtistDB _artistDB;
     SongDB _songDB;
@@ -88,13 +88,9 @@ abstract contract Constants is Test {
     AccountData WILDCARD_ACCOUNT = ACCOUNT8;
 
     function setUp() public {
-
         usdc = new MockUsdc();
 
-        orchestrator = new Orchestrator(
-            ADMIN.Address,
-            address(usdc)
-        );
+        orchestrator = new Orchestrator(ADMIN.Address, address(usdc));
 
         albumDB = new AlbumDB(address(orchestrator));
         artistDB = new ArtistDB(address(orchestrator));
@@ -107,9 +103,8 @@ abstract contract Constants is Test {
             address(artistDB),
             address(songDB),
             address(userDB)
-        );        
+        );
         vm.stopPrank();
-
 
         executeBeforeSetUp();
     }
@@ -155,16 +150,39 @@ abstract contract Constants is Test {
         _giveUsdc(userAddress, amount);
         _approveUsdc(userAddress, address(orchestrator), amount);
 
-        
-
         vm.startPrank(userAddress);
         orchestrator.depositFunds(userId, amount);
         vm.stopPrank();
     }
+
+
+    function _execute_orchestrator_registerSong(
+        address principalArtistAddress,
+        string memory title,
+        uint256 principalArtistId,
+        uint256[] memory featuredArtistIds,
+        string memory mediaURI,
+        string memory metadataURI,
+        bool isExplicit,
+        uint256 royaltyBps
+    ) internal virtual returns (uint256) {
+        vm.startPrank(principalArtistAddress);
+        uint256 songId = orchestrator.registerSong(
+            title,
+            principalArtistId,
+            featuredArtistIds,
+            mediaURI,
+            metadataURI,
+            isExplicit,
+            royaltyBps
+        );
+        vm.stopPrank();
+        return songId;
+    }
+
 }
 
 contract MockUsdc is ERC20 {
-    
     function name() public pure override returns (string memory) {
         return "USD Coin";
     }
