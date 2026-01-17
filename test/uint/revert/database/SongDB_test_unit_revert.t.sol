@@ -225,7 +225,7 @@ contract SongDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_revert_SongDB__purchase__UserAlreadyBought() public {
+    function test_unit_revert_SongDB__purchase__UserAlreadyOwns() public {
         uint256[] memory artistIDs = new uint256[](2);
         artistIDs[0] = 2;
         artistIDs[1] = 3;
@@ -241,7 +241,7 @@ contract SongDB_test_unit_revert is Constants {
             500
         );
         _songDB.purchase(assignedId, 10);
-        vm.expectRevert(SongDB.UserAlreadyBought.selector);
+        vm.expectRevert(SongDB.UserAlreadyOwns.selector);
         _songDB.purchase(assignedId, 10);
         vm.stopPrank();
 
@@ -262,6 +262,101 @@ contract SongDB_test_unit_revert is Constants {
             _songDB.getMetadata(42).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__gift__Unauthorized() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _songDB.gift(assignedId, 20);
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__gift__SongDoesNotExist() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(SongDB.SongDoesNotExist.selector);
+        _songDB.gift(33, 20);
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(33).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__gift__SongIsBanned() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        _songDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(SongDB.SongIsBanned.selector);
+        _songDB.gift(assignedId, 20);
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__gift__UserAlreadyOwns() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        _songDB.gift(assignedId, 20);
+        vm.expectRevert(SongDB.UserAlreadyOwns.selector);
+        _songDB.gift(assignedId, 20);
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            1,
+            "Times bought should remain 1 due to revert"
         );
     }
 
@@ -287,12 +382,12 @@ contract SongDB_test_unit_revert is Constants {
         _songDB.refund(assignedId, 10);
         vm.stopPrank();
         assertTrue(
-            _songDB.isBoughtByUser(assignedId, 10),
+            _songDB.hasUserPurchased(assignedId, 10),
             "Song should not be marked as bought by user ID 10 after refund"
         );
     }
 
-    function test_unit_revert_SongDB__refund__UserHasNotBought() public {
+    function test_unit_revert_SongDB__refund__UserDoesNotOwnSong() public {
         uint256[] memory artistIDs = new uint256[](2);
         artistIDs[0] = 2;
         artistIDs[1] = 3;
@@ -307,13 +402,39 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
-        vm.expectRevert(SongDB.UserHasNotBought.selector);
+        vm.expectRevert(SongDB.UserDoesNotOwnSong.selector);
         _songDB.refund(assignedId, 10);
         vm.stopPrank();
         assertEq(
             _songDB.getMetadata(assignedId).TimesBought,
             0,
             "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__refund__UserHasGiftedSong() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        _songDB.gift(assignedId, 10);
+        vm.expectRevert(SongDB.UserHasGiftedSong.selector);
+        _songDB.refund(assignedId, 10);
+        vm.stopPrank();
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            1,
+            "Times bought should remain 1 due to revert"
         );
     }
 

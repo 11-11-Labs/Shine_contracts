@@ -138,13 +138,41 @@ contract SongDB_test_unit_correct is Constants {
         _songDB.purchase(assignedId, 10);
         vm.stopPrank();
         assertTrue(
-            _songDB.isBoughtByUser(assignedId, 10),
+            _songDB.hasUserPurchased(assignedId, 10),
             "Song should be marked as bought by user ID 10"
         );
         assertEq(
             _songDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
+        );
+    }
+
+    function test_unit_correct_SongDB__gift() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+        
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        _songDB.gift(assignedId, 20);
+        vm.stopPrank();
+        assertTrue(
+            _songDB.hasUserGifted(assignedId, 20),
+            "Song should be marked as gifted to user ID 20"
+        );
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            1,
+            "Times bought should be incremented to 1 after gifting"
         );
     }
 
@@ -167,7 +195,7 @@ contract SongDB_test_unit_correct is Constants {
         _songDB.refund(assignedId, 10);
         vm.stopPrank();
         assertFalse(
-            _songDB.isBoughtByUser(assignedId, 10),
+            _songDB.isUserOwner(assignedId, 10),
             "Song should not be marked as bought by user ID 10 after refund"
         );
         assertEq(

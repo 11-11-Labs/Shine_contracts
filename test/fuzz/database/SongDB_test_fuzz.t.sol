@@ -151,13 +151,36 @@ contract SongDB_test_fuzz is Constants {
         songDB.purchase(assignedId, userId);
         vm.stopPrank();
         assertTrue(
-            songDB.isBoughtByUser(assignedId, userId),
+            songDB.hasUserPurchased(assignedId, userId),
             "Song should be marked as bought by user"
         );
         assertEq(
             songDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
+        );
+    }
+
+    function test_fuzz_SongDB__gift(uint toUserId) public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+        
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        songDB.gift(assignedId, toUserId);
+        vm.stopPrank();
+        assertTrue(
+            songDB.hasUserGifted(assignedId, toUserId),
+            "Song should be marked as gifted to the user"
         );
     }
 
@@ -180,7 +203,7 @@ contract SongDB_test_fuzz is Constants {
         songDB.refund(assignedId, userId);
         vm.stopPrank();
         assertFalse(
-            songDB.isBoughtByUser(assignedId, userId),
+            songDB.isUserOwner(assignedId, userId),
             "Song should not be marked as bought by user after refund"
         );
         assertEq(
