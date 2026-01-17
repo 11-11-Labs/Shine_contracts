@@ -84,6 +84,7 @@ abstract contract Constants is Test {
     AccountData SUDO = ACCOUNT4;
     AccountData USER = ACCOUNT5;
     AccountData ARTIST = ACCOUNT6;
+    AccountData WILDCARD_ACCOUNT = ACCOUNT7;
 
     function setUp() public {
 
@@ -99,18 +100,66 @@ abstract contract Constants is Test {
         songDB = new SongDB(address(orchestrator));
         userDB = new UserDB(address(orchestrator));
 
+        vm.startPrank(ADMIN.Address);
         orchestrator.setDatabaseAddresses(
             address(albumDB),
             address(artistDB),
             address(songDB),
             address(userDB)
         );        
+        vm.stopPrank();
 
 
         executeBeforeSetUp();
     }
 
     function executeBeforeSetUp() internal virtual {}
+
+    function _giveUsdc(address to, uint256 amount) internal virtual {
+        usdc.mint(to, amount);
+    }
+
+    function _approveUsdc(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
+        vm.startPrank(owner);
+        usdc.approve(spender, amount);
+        vm.stopPrank();
+    }
+
+    function _execute_orchestrator_register(
+        bool isArtist,
+        string memory name,
+        string memory metadataURI,
+        address userAddress
+    ) internal virtual returns (uint256) {
+        vm.startPrank(userAddress);
+        uint256 id = orchestrator.register(
+            isArtist,
+            name,
+            metadataURI,
+            userAddress
+        );
+        vm.stopPrank();
+        return id;
+    }
+
+    function _execute_orchestrator_depositFunds(
+        uint256 userId,
+        address userAddress,
+        uint256 amount
+    ) internal virtual {
+        _giveUsdc(userAddress, amount);
+        _approveUsdc(userAddress, address(orchestrator), amount);
+
+        
+
+        vm.startPrank(userAddress);
+        orchestrator.depositFunds(userId, amount);
+        vm.stopPrank();
+    }
 }
 
 contract MockUsdc is ERC20 {
