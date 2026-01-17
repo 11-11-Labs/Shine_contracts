@@ -128,8 +128,6 @@ contract Orchestrator is Ownable {
         }
     }
 
-    
-
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Funds Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function depositFunds(uint256 userId, uint256 amount) external {
@@ -158,7 +156,6 @@ contract Orchestrator is Ownable {
         userDB.addBalance(toUserId, amount);
     }
 
-    
     function makeDonation(
         uint256 userId,
         uint256 toArtistId,
@@ -172,7 +169,6 @@ contract Orchestrator is Ownable {
 
         emit EventsLib.DonationMade(userId, toArtistId, amount);
     }
-
 
     function withdrawFunds(
         bool isArtist,
@@ -199,7 +195,6 @@ contract Orchestrator is Ownable {
 
         IERC20(stablecoin.current).transfer(msg.sender, amount);
     }
-
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Song Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
@@ -236,20 +231,20 @@ contract Orchestrator is Ownable {
     function changeSongFullData(
         uint256 id,
         string memory title,
-        uint256 principalArtistId,
         uint256[] memory artistIDs,
         string memory mediaURI,
         string memory metadataURI,
         bool canBePurchased,
         uint256 price
-    ) external senderIsArtistId(principalArtistId) songIdExists(id) {
-        if (songDB.getPrincipalArtistId(id) != principalArtistId)
-            revert ErrorsLib.ArtistIdIsNotPrincipalArtistIdOfSong();
-
+    )
+        external
+        senderIsArtistId(songDB.getPrincipalArtistId(id))
+        songIdExists(id)
+    {
         songDB.change(
             id,
             title,
-            principalArtistId,
+            songDB.getPrincipalArtistId(id),
             artistIDs,
             mediaURI,
             metadataURI,
@@ -259,24 +254,24 @@ contract Orchestrator is Ownable {
     }
 
     function changeSongPurchaseability(
-        uint256 principalArtistId,
         uint256 songId,
         bool canBePurchased
-    ) external senderIsArtistId(principalArtistId) songIdExists(songId) {
-        if (songDB.getPrincipalArtistId(songId) != principalArtistId)
-            revert ErrorsLib.SenderIsNotPrincipalArtist();
-
+    )
+        external
+        senderIsArtistId(songDB.getPrincipalArtistId(songId))
+        songIdExists(songId)
+    {
         songDB.changePurchaseability(songId, canBePurchased);
     }
 
     function changeSongPrice(
-        uint256 principalArtistId,
         uint256 songId,
         uint256 price
-    ) external senderIsArtistId(principalArtistId) songIdExists(songId) {
-        if (songDB.getPrincipalArtistId(songId) != principalArtistId)
-            revert ErrorsLib.SenderIsNotPrincipalArtist();
-
+    )
+        external
+        senderIsArtistId(songDB.getPrincipalArtistId(songId))
+        songIdExists(songId)
+    {
         songDB.changePrice(songId, price);
     }
 
@@ -295,12 +290,9 @@ contract Orchestrator is Ownable {
     }
 
     function giftSong(
-        uint256 artistId,
         uint256 songId,
         uint256 toUserId
-    ) external senderIsArtistId(artistId) {
-        if (songDB.getPrincipalArtistId(songId) != artistId)
-            revert ErrorsLib.SenderIsNotPrincipalArtist();
+    ) external senderIsArtistId(songDB.getPrincipalArtistId(songId)) {
 
         songDB.purchase(songId, toUserId);
         userDB.addSong(toUserId, songId);
