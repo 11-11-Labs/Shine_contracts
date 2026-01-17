@@ -412,32 +412,6 @@ contract SongDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_revert_SongDB__refund__UserHasGiftedSong() public {
-        uint256[] memory artistIDs = new uint256[](2);
-        artistIDs[0] = 2;
-        artistIDs[1] = 3;
-
-        vm.startPrank(FAKE_ORCHESTRATOR.Address);
-        uint256 assignedId = _songDB.register(
-            "Song Title",
-            1,
-            artistIDs,
-            "ipfs://mediaURI",
-            "ipfs://metadataURI",
-            true,
-            500
-        );
-        _songDB.gift(assignedId, 10);
-        vm.expectRevert(SongDB.UserHasGiftedSong.selector);
-        _songDB.refund(assignedId, 10);
-        vm.stopPrank();
-        assertEq(
-            _songDB.getMetadata(assignedId).TimesBought,
-            1,
-            "Times bought should remain 1 due to revert"
-        );
-    }
-
     function test_unit_revert_SongDB__refund__SongDoesNotExist() public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
         vm.expectRevert(SongDB.SongDoesNotExist.selector);

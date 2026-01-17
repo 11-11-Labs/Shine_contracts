@@ -31,8 +31,6 @@ contract SongDB is IdUtils, Ownable {
     error UserAlreadyOwns();
     /// @dev Thrown when trying to refund a song the user does not own
     error UserDoesNotOwnSong();
-    /// @dev Thrown when trying to refund a song that was gifted, not purchased
-    error UserHasGiftedSong();
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -44,7 +42,7 @@ contract SongDB is IdUtils, Ownable {
      * @param MediaURI URI pointing to the song media file (e.g., IPFS)
      * @param MetadataURI URI pointing to off-chain metadata (e.g., IPFS)
      * @param CanBePurchased Flag indicating if the song is available for sale
-     * @param Price The net purchase price for this song (in wei or token units). 
+     * @param Price The net purchase price for this song (in wei or token units).
      *              Does not include platform fees or taxes.
      * @param TimesBought Counter tracking total number of purchases
      * @param IsBanned Flag indicating if the song has been banned from the platform
@@ -99,7 +97,7 @@ contract SongDB is IdUtils, Ownable {
     /**
      * @notice Initializes the SongDB contract
      * @dev Sets the Orchestrator contract as the owner for access control
-     * @param _orchestratorAddress Address of the Orchestrator contract that will manage 
+     * @param _orchestratorAddress Address of the Orchestrator contract that will manage
      *                             this database
      */
     constructor(address _orchestratorAddress) {
@@ -116,7 +114,7 @@ contract SongDB is IdUtils, Ownable {
      * @param mediaURI URI pointing to the song media file
      * @param metadataURI URI pointing to off-chain metadata
      * @param canBePurchased Whether the song is available for purchase
-     * @param price The net purchase price for this song. 
+     * @param price The net purchase price for this song.
      *              Additional fees and taxes may apply separately.
      * @return The newly assigned song ID
      */
@@ -149,7 +147,7 @@ contract SongDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a song purchase for a user
-     * @dev Only callable by owner. Reverts if user already owns it or song is not 
+     * @dev Only callable by owner. Reverts if user already owns it or song is not
      *      purchasable/banned.
      * @param id The song ID to purchase
      * @param userId The unique identifier of the purchasing user
@@ -159,7 +157,7 @@ contract SongDB is IdUtils, Ownable {
         uint256 userId
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
         if (!songs[id].CanBePurchased) revert SongCannotBePurchased();
-        if (songOwnByUserId[id][userId] != 0x00)  revert UserAlreadyOwns();
+        if (songOwnByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
 
         songOwnByUserId[id][userId] = 0x01;
         songs[id].TimesBought++;
@@ -175,30 +173,26 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 toUserId
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
-        if (songOwnByUserId[id][toUserId] != 0x00)  revert UserAlreadyOwns();
+        if (songOwnByUserId[id][toUserId] != 0x00) revert UserAlreadyOwns();
 
         songOwnByUserId[id][toUserId] = 0x02;
         songs[id].TimesBought++;
     }
 
     /**
-     * @notice Processes a refund for a previously purchased song
-     * @dev Only callable by owner. Reverts if user hasn't purchased the song.
+     * @notice Processes a refund for a previously purchased/gifted song
+     * @dev Only callable by owner. Reverts if user hasn't owned the song.
      * @param id The song ID to refund
      * @param userId The unique identifier of the user requesting refund
-     * @return True on successful refund
      */
     function refund(
         uint256 id,
         uint256 userId
-    ) external onlyOwner onlyIfExist(id) returns (bool) {
+    ) external onlyOwner onlyIfExist(id) {
         if (songOwnByUserId[id][userId] == 0x00) revert UserDoesNotOwnSong();
-        if (songOwnByUserId[id][userId] == 0x02) revert UserHasGiftedSong();
 
         songOwnByUserId[id][userId] = 0x00;
         songs[id].TimesBought--;
-
-        return true;
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Metadata Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
@@ -252,7 +246,7 @@ contract SongDB is IdUtils, Ownable {
 
     /**
      * @notice Updates the net price of a song
-     * @dev Only callable by owner. Cannot modify banned songs. 
+     * @dev Only callable by owner. Cannot modify banned songs.
      *      This is the net price; fees and taxes are separate.
      * @param id The song ID to update
      * @param price New net purchase price for the song
@@ -346,7 +340,7 @@ contract SongDB is IdUtils, Ownable {
     /**
      * @notice Gets the current net price of a song
      * @param id The song ID to query
-     * @return The net price of the song in wei or token units 
+     * @return The net price of the song in wei or token units
      *         (does not include fees or taxes)
      */
     function getPrice(uint256 id) external view returns (uint256) {
@@ -385,25 +379,10 @@ contract SongDB is IdUtils, Ownable {
      * @param id The song ID to query
      * @return Complete Metadata struct with all song information
      */
-    function getMetadata(
-        uint256 id
-    ) external view returns (Metadata memory) {
+    function getMetadata(uint256 id) external view returns (Metadata memory) {
         return songs[id];
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**********************************
 🮋🮋 Made with ❤️ by 11:11 Labs 🮋🮋
