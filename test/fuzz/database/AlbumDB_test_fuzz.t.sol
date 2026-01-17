@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Constants} from "../Constants.sol";
+import {Constants} from "../../Constants.sol";
 import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 
 contract AlbumDB_test_fuzz is Constants {
@@ -141,7 +141,7 @@ contract AlbumDB_test_fuzz is Constants {
             67
             // he he c:
         );
-        uint256[] memory purchasedSongIDs = albumDB.purchaseSpecialEdition(
+        uint256[] memory purchasedSongIDs = albumDB.purchase(
             assignedId,
             buyer
         );
