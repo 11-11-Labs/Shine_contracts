@@ -23,16 +23,16 @@ contract AlbumDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /// @dev Thrown when attempting to access an album that does not exist
     error AlbumDoesNotExist();
-    /// @dev Thrown when a user tries to purchase an album they already own
-    error UserBoughtAlbum();
+    /// @dev Thrown when a user tries to purchase/gift an album they already own
+    error UserAlreadyOwns();
     /// @dev Thrown when attempting to purchase an album that is not available for sale
     error AlbumNotPurchasable();
     /// @dev Thrown when attempting to interact with a banned album
     error AlbumIsBanned();
     /// @dev Thrown when the special edition max supply has been reached
     error AlbumMaxSupplyReached();
-    /// @dev Thrown when trying to refund an album the user has not purchased
-    error UserNotBoughtAlbum();
+    /// @dev Thrown when trying to refund an album the user has not owned
+    error UserNotOwnedAlbum();
     /// @dev Thrown when trying to create or update an album with zero songs
     error AlbumCannotHaveZeroSongs();
 
@@ -68,9 +68,13 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /// @notice Tracks whether a user has purchased a specific album
-    /// @dev Mapping: albumId => userId => hasPurchased
-    mapping(uint256 Id => mapping(uint256 userId => bool)) isBoughtByUserId;
+    /// @notice Tracks whether a user owns a specific album
+    /// @dev Mapping: albumId => userId => status
+    ///      - 0x00 = not owned
+    ///      - 0x01 = bought (owned)
+    ///      - 0x02 = gifted (owned)
+    mapping(uint256 Id => mapping(uint256 userId => bytes1))
+        private ownByUserId;
 
     /// @notice Stores all album metadata indexed by album ID
     /// @dev Private mapping to prevent direct external access
@@ -157,7 +161,7 @@ contract AlbumDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a standard album purchase for a user
-     * @dev Only callable by owner. Marks the album as purchased by the user and 
+     * @dev Only callable by owner. Marks the album as purchased by the user and
      *      increments the purchase counter. For special editions, validates that
      *      max supply has not been reached. Reverts if: user already owns album,
      *      album is not purchasable, album is banned, or special edition max supply reached.
@@ -175,7 +179,7 @@ contract AlbumDB is IdUtils, Ownable {
         onlyIfExist(id)
         returns (uint256[] memory)
     {
-        if (isBoughtByUserId[id][userId]) revert UserBoughtAlbum();
+        if (ownByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
 
         if (!albums[id].CanBePurchased) revert AlbumNotPurchasable();
 
@@ -185,9 +189,41 @@ contract AlbumDB is IdUtils, Ownable {
             }
         }
 
-        isBoughtByUserId[id][userId] = true;
+        ownByUserId[id][userId] = 0x01;
         albums[id].TimesBought++;
 
+        return albums[id].MusicIds;
+    }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Gifts 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Gifts an album to a user without payment
+     * @dev Only callable by owner. Marks the album as gifted to the user and
+     *      increments the purchase counter. For special editions, validates that
+     *      max supply has not been reached. Reverts if: user already owns album,
+     *      album is banned, or special edition max supply reached.
+     * @param id The album ID to gift
+     * @param userId The unique identifier of the recipient user
+     * @return Array of song IDs included in the gifted album
+     */
+    function gift(
+        uint256 id,
+        uint256 userId
+    )
+        external
+        onlyOwner
+        onlyIfNotBanned(id)
+        onlyIfExist(id)
+        returns (uint256[] memory)
+    {
+        if (ownByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
+        if (albums[id].IsASpecialEdition) {
+            if (albums[id].TimesBought >= albums[id].MaxSupplySpecialEdition) {
+                revert AlbumMaxSupplyReached();
+            }
+        }
+        ownByUserId[id][userId] = 0x02;
+        albums[id].TimesBought++;
         return albums[id].MusicIds;
     }
 
@@ -203,9 +239,9 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner onlyIfExist(id) returns (uint256[] memory, uint256) {
-        if (!isBoughtByUserId[id][userId]) revert UserNotBoughtAlbum();
+        if (ownByUserId[id][userId] == 0x00) revert UserNotOwnedAlbum();
 
-        isBoughtByUserId[id][userId] = false;
+        ownByUserId[id][userId] = 0x00;
         albums[id].TimesBought--;
 
         return (albums[id].MusicIds, albums[id].Price);
@@ -304,11 +340,25 @@ contract AlbumDB is IdUtils, Ownable {
      * @param userId The user ID to check
      * @return True if the user has purchased the album, false otherwise
      */
-    function canUserBuy(
+    function isUserOwner(
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
-        return isBoughtByUserId[id][userId];
+        return ownByUserId[id][userId] != 0x00;
+    }
+
+    /**
+     * @notice Retrieves the ownership status byte for a user and album
+     * @dev Returns 0x00 (not owned), 0x01 (bought), or 0x02 (gifted)
+     * @param id The album ID to check
+     * @param userId The user ID to check
+     * @return The ownership status byte
+     */
+    function userOwnershipStatus(
+        uint256 id,
+        uint256 userId
+    ) external view returns (bytes1) {
+        return ownByUserId[id][userId];
     }
 
     /**
@@ -351,19 +401,6 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     /**
-     * @notice Checks if a user has purchased a specific album
-     * @param id The album ID to check
-     * @param userId The user ID to check
-     * @return True if the user has purchased the album, false otherwise
-     */
-    function hasUserPurchased(
-        uint256 id,
-        uint256 userId
-    ) external view returns (bool) {
-        return isBoughtByUserId[id][userId];
-    }
-
-    /**
      * @notice Gets the principal artist ID for an album
      * @param id The album ID to query
      * @return The unique identifier of the principal artist
@@ -386,9 +423,7 @@ contract AlbumDB is IdUtils, Ownable {
      * @param id The album ID to query
      * @return Complete Metadata struct with all album information
      */
-    function getMetadata(
-        uint256 id
-    ) external view returns (Metadata memory) {
+    function getMetadata(uint256 id) external view returns (Metadata memory) {
         return albums[id];
     }
 }

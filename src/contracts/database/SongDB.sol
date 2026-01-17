@@ -66,7 +66,7 @@ contract SongDB is IdUtils, Ownable {
     ///      - 0x01 = bought (owned)
     ///      - 0x02 = gifted (owned)
     mapping(uint256 Id => mapping(uint256 userId => bytes1))
-        private songOwnByUserId;
+        private ownByUserId;
 
     /// @notice Stores all song metadata indexed by song ID
     /// @dev Private mapping to prevent direct external access
@@ -157,12 +157,13 @@ contract SongDB is IdUtils, Ownable {
         uint256 userId
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
         if (!songs[id].CanBePurchased) revert SongCannotBePurchased();
-        if (songOwnByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
+        if (ownByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
 
-        songOwnByUserId[id][userId] = 0x01;
+        ownByUserId[id][userId] = 0x01;
         songs[id].TimesBought++;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Gifts 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Gifts a song to a user without payment
      * @dev Only callable by owner. Reverts if user already owns it or song is banned.
@@ -173,12 +174,13 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 toUserId
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
-        if (songOwnByUserId[id][toUserId] != 0x00) revert UserAlreadyOwns();
+        if (ownByUserId[id][toUserId] != 0x00) revert UserAlreadyOwns();
 
-        songOwnByUserId[id][toUserId] = 0x02;
+        ownByUserId[id][toUserId] = 0x02;
         songs[id].TimesBought++;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Refunds 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a refund for a previously purchased/gifted song
      * @dev Only callable by owner. Reverts if user hasn't owned the song.
@@ -189,9 +191,9 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner onlyIfExist(id) {
-        if (songOwnByUserId[id][userId] == 0x00) revert UserDoesNotOwnSong();
+        if (ownByUserId[id][userId] == 0x00) revert UserDoesNotOwnSong();
 
-        songOwnByUserId[id][userId] = 0x00;
+        ownByUserId[id][userId] = 0x00;
         songs[id].TimesBought--;
     }
 
@@ -282,7 +284,20 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
-        return songOwnByUserId[id][userId] != 0x00;
+        return ownByUserId[id][userId] != 0x00;
+    }
+
+    /**
+     * @notice Retrieves the ownership status byte for a user and song
+     * @param id The song ID to check
+     * @param userId The user ID to check
+     * @return The ownership status byte (0x00 = not owned, 0x01 = bought, 0x02 = gifted)
+     */
+    function userOwnershipStatus(
+        uint256 id,
+        uint256 userId
+    ) external view returns (bytes1) {
+        return ownByUserId[id][userId];
     }
 
     /**
@@ -295,33 +310,7 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
-        return songOwnByUserId[id][userId] != 0x00;
-    }
-
-    /**
-     * @notice Checks if a user has purchased a specific song
-     * @param id The song ID to check
-     * @param userId The user ID to check
-     * @return True if the user has purchased the song, false otherwise
-     */
-    function hasUserPurchased(
-        uint256 id,
-        uint256 userId
-    ) external view returns (bool) {
-        return songOwnByUserId[id][userId] == 0x01;
-    }
-
-    /**
-     * @notice Checks if a user has been gifted a specific song
-     * @param id The song ID to check
-     * @param userId The user ID to check
-     * @return True if the user has been gifted the song, false otherwise
-     */
-    function hasUserGifted(
-        uint256 id,
-        uint256 userId
-    ) external view returns (bool) {
-        return songOwnByUserId[id][userId] == 0x02;
+        return ownByUserId[id][userId] != 0x00;
     }
 
     /**
@@ -334,7 +323,7 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external view returns (bytes1) {
-        return songOwnByUserId[id][userId];
+        return ownByUserId[id][userId];
     }
 
     /**

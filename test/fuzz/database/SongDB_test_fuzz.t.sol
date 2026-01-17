@@ -151,7 +151,7 @@ contract SongDB_test_fuzz is Constants {
         songDB.purchase(assignedId, userId);
         vm.stopPrank();
         assertTrue(
-            songDB.hasUserPurchased(assignedId, userId),
+            songDB.isUserOwner(assignedId, userId),
             "Song should be marked as bought by user"
         );
         assertEq(
@@ -179,7 +179,7 @@ contract SongDB_test_fuzz is Constants {
         songDB.gift(assignedId, toUserId);
         vm.stopPrank();
         assertTrue(
-            songDB.hasUserGifted(assignedId, toUserId),
+            songDB.isUserOwner(assignedId, toUserId),
             "Song should be marked as gifted to the user"
         );
     }

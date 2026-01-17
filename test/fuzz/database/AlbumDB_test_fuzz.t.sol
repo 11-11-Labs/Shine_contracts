@@ -120,6 +120,41 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
+    function test_fuzz_AlbumDB__gift(
+        uint256 receiver
+    ) public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        uint256[] memory giftedSongIDs = albumDB.gift(assignedId, receiver);
+        vm.stopPrank();
+
+        assertEq(
+            giftedSongIDs,
+            listOfSongIDs,
+            "Gifted song IDs should match the registered ones"
+        );
+        assertEq(
+            albumDB.getMetadata(assignedId).TimesBought,
+            1,
+            "Times bought should be incremented to 1"
+        );
+    }
+
     function test_fuzz_AlbumDB__purchaseSpecialEdition(
         uint256 buyer
     ) public {

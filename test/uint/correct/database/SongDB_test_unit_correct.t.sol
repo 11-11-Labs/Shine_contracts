@@ -137,8 +137,9 @@ contract SongDB_test_unit_correct is Constants {
         );
         _songDB.purchase(assignedId, 10);
         vm.stopPrank();
-        assertTrue(
-            _songDB.hasUserPurchased(assignedId, 10),
+        assertEq(
+            uint256(uint8(_songDB.userOwnershipStatus(assignedId, 10))),
+            uint256(0x01),
             "Song should be marked as bought by user ID 10"
         );
         assertEq(
@@ -165,8 +166,9 @@ contract SongDB_test_unit_correct is Constants {
         );
         _songDB.gift(assignedId, 20);
         vm.stopPrank();
-        assertTrue(
-            _songDB.hasUserGifted(assignedId, 20),
+        assertEq(
+            uint256(uint8(_songDB.userOwnershipStatus(assignedId, 20))),
+            uint256(0x02),
             "Song should be marked as gifted to user ID 20"
         );
         assertEq(

@@ -109,6 +109,34 @@ contract AlbumDB_test_unit_correct is Constants {
         );
     }
 
+    function test_unit_correct_AlbumDB__gift() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        uint256[] memory giftedSongIDs = _albumDB.gift(assignedId, 1234);
+        vm.stopPrank();
+
+        assertEq(
+            giftedSongIDs,
+            listOfSongIDs,
+            "Gifted song IDs should match the registered ones"
+        );
+    }
+
     function test_unit_correct_AlbumDB__purchaseSpecialEdition() public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;

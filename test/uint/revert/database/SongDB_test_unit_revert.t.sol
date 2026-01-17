@@ -382,7 +382,7 @@ contract SongDB_test_unit_revert is Constants {
         _songDB.refund(assignedId, 10);
         vm.stopPrank();
         assertTrue(
-            _songDB.hasUserPurchased(assignedId, 10),
+            _songDB.isUserOwner(assignedId, 10),
             "Song should not be marked as bought by user ID 10 after refund"
         );
     }
