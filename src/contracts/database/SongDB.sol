@@ -27,10 +27,12 @@ contract SongDB is IdUtils, Ownable {
     error SongIsBanned();
     /// @dev Thrown when attempting to purchase a song that is not available for sale
     error SongCannotBePurchased();
-    /// @dev Thrown when a user tries to purchase a song they already own
-    error UserAlreadyBought();
-    /// @dev Thrown when trying to refund a song the user has not purchased
-    error UserHasNotBought();
+    /// @dev Thrown when a user tries to purchase or gift a song they already own
+    error UserAlreadyOwns();
+    /// @dev Thrown when trying to refund a song the user does not own
+    error UserDoesNotOwnSong();
+    /// @dev Thrown when trying to refund a song that was gifted, not purchased
+    error UserHasGiftedSong();
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -60,10 +62,13 @@ contract SongDB is IdUtils, Ownable {
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /// @notice Tracks whether a user has purchased a specific song
-    /// @dev Mapping: songId => userId => hasPurchased
-    mapping(uint256 Id => mapping(uint256 userId => bool))
-        private isBoughtByUserId;
+    /// @notice Tracks whether a user owns a specific song
+    /// @dev Mapping: songId => userId => status
+    ///      - 0x00 = not owned
+    ///      - 0x01 = bought (owned)
+    ///      - 0x02 = gifted (owned)
+    mapping(uint256 Id => mapping(uint256 userId => bytes1))
+        private songOwnByUserId;
 
     /// @notice Stores all song metadata indexed by song ID
     /// @dev Private mapping to prevent direct external access
@@ -154,9 +159,25 @@ contract SongDB is IdUtils, Ownable {
         uint256 userId
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
         if (!songs[id].CanBePurchased) revert SongCannotBePurchased();
-        if (isBoughtByUserId[id][userId]) revert UserAlreadyBought();
+        if (songOwnByUserId[id][userId] != 0x00)  revert UserAlreadyOwns();
 
-        isBoughtByUserId[id][userId] = true;
+        songOwnByUserId[id][userId] = 0x01;
+        songs[id].TimesBought++;
+    }
+
+    /**
+     * @notice Gifts a song to a user without payment
+     * @dev Only callable by owner. Reverts if user already owns it or song is banned.
+     * @param id The song ID to gift
+     * @param toUserId The unique identifier of the recipient user
+     */
+    function gift(
+        uint256 id,
+        uint256 toUserId
+    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
+        if (songOwnByUserId[id][toUserId] != 0x00)  revert UserAlreadyOwns();
+
+        songOwnByUserId[id][toUserId] = 0x02;
         songs[id].TimesBought++;
     }
 
@@ -171,9 +192,10 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner onlyIfExist(id) returns (bool) {
-        if (!isBoughtByUserId[id][userId]) revert UserHasNotBought();
+        if (songOwnByUserId[id][userId] == 0x00) revert UserDoesNotOwnSong();
+        if (songOwnByUserId[id][userId] == 0x02) revert UserHasGiftedSong();
 
-        isBoughtByUserId[id][userId] = false;
+        songOwnByUserId[id][userId] = 0x00;
         songs[id].TimesBought--;
 
         return true;
@@ -257,16 +279,16 @@ contract SongDB is IdUtils, Ownable {
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
-     * @notice Checks if a user has purchased a specific song
+     * @notice Checks if a user owns a specific song
      * @param id The song ID to check
      * @param userId The user ID to check
-     * @return True if the user has purchased the song, false otherwise
+     * @return True if the user owns the song, false otherwise
      */
-    function isBoughtByUser(
+    function isUserOwner(
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
-        return isBoughtByUserId[id][userId];
+        return songOwnByUserId[id][userId] != 0x00;
     }
 
     /**
@@ -279,7 +301,7 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
-        return isBoughtByUserId[id][userId];
+        return songOwnByUserId[id][userId] != 0x00;
     }
 
     /**
@@ -292,7 +314,33 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external view returns (bool) {
-        return isBoughtByUserId[id][userId];
+        return songOwnByUserId[id][userId] == 0x01;
+    }
+
+    /**
+     * @notice Checks if a user has been gifted a specific song
+     * @param id The song ID to check
+     * @param userId The user ID to check
+     * @return True if the user has been gifted the song, false otherwise
+     */
+    function hasUserGifted(
+        uint256 id,
+        uint256 userId
+    ) external view returns (bool) {
+        return songOwnByUserId[id][userId] == 0x02;
+    }
+
+    /**
+     * @notice Retrieves the ownership status byte for a user and song
+     * @param id The song ID to check
+     * @param userId The user ID to check
+     * @return The ownership status byte (0x00 = not owned, 0x01 = bought, 0x02 = gifted)
+     */
+    function checkOwnership(
+        uint256 id,
+        uint256 userId
+    ) external view returns (bytes1) {
+        return songOwnByUserId[id][userId];
     }
 
     /**
