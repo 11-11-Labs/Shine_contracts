@@ -64,7 +64,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.changeBasicData(
             assignedId,
@@ -89,7 +89,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.changeAddress(assignedId, newAddress);
         vm.stopPrank();
@@ -111,7 +111,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.addBalance(assignedId, amount);
         vm.stopPrank();
@@ -129,7 +129,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.addBalance(assignedId, amount);
         artistDB.deductBalance(assignedId, deductAmount);
@@ -147,7 +147,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.addAccumulatedRoyalties(assignedId, amount);
         vm.stopPrank();
@@ -165,7 +165,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.addAccumulatedRoyalties(assignedId, amount);
         artistDB.deductAccumulatedRoyalties(assignedId, deductAmount);
@@ -183,7 +183,7 @@ contract ArtistDB_test_fuzz is Constants {
         uint256 assignedId = artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         artistDB.setBannedStatus(assignedId, statusFlag);
         vm.stopPrank();

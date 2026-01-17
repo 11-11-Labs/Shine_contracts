@@ -9,14 +9,14 @@ import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 
 contract Orchestrator_test_unit_correct_Funds is Constants {
     uint256 USER_ID;
-    uint256 ARTIST_ID;
+    uint256 ARTIST_1_ID;
     uint256 WILDCARD_USER_ID;
     function executeBeforeSetUp() internal override {
-        ARTIST_ID = _execute_orchestrator_register(
+        ARTIST_1_ID = _execute_orchestrator_register(
             true,
             "initial_artist",
             "https://arweave.net/initialArtistURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         USER_ID = _execute_orchestrator_register(
             false,
@@ -71,10 +71,10 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         _execute_orchestrator_depositFunds(USER_ID, USER.Address, donationAmount);
 
         vm.startPrank(USER.Address);
-        orchestrator.makeDonation(USER_ID, ARTIST_ID, donationAmount);
+        orchestrator.makeDonation(USER_ID, ARTIST_1_ID, donationAmount);
         vm.stopPrank();
 
-        uint256 artistBalance = artistDB.getMetadata(ARTIST_ID).Balance;
+        uint256 artistBalance = artistDB.getMetadata(ARTIST_1_ID).Balance;
         assertEq(
             artistBalance,
             donationAmount,
@@ -114,18 +114,18 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         _execute_orchestrator_depositFunds(USER_ID, USER.Address, donationAmount);
 
         vm.startPrank(USER.Address);
-        orchestrator.makeDonation(USER_ID, ARTIST_ID, donationAmount);
+        orchestrator.makeDonation(USER_ID, ARTIST_1_ID, donationAmount);
         vm.stopPrank();
 
         ///@dev Now, withdraw funds as the artist
 
         uint256 withdrawAmount = 10_000_000; // 10 USDC with 6 decimals
 
-        vm.startPrank(ARTIST.Address);
-        orchestrator.withdrawFunds(true, ARTIST_ID, withdrawAmount);
+        vm.startPrank(ARTIST_1.Address);
+        orchestrator.withdrawFunds(true, ARTIST_1_ID, withdrawAmount);
         vm.stopPrank();
 
-        uint256 artistBalanceAfterWithdraw = artistDB.getMetadata(ARTIST_ID).Balance;
+        uint256 artistBalanceAfterWithdraw = artistDB.getMetadata(ARTIST_1_ID).Balance;
         assertEq(
             artistBalanceAfterWithdraw,
             20_000_000,
@@ -133,7 +133,7 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         );
 
         assertEq(
-            usdc.balanceOf(ARTIST.Address),
+            usdc.balanceOf(ARTIST_1.Address),
             withdrawAmount,
             "Artist USDC balance should increase by the withdrawn amount"
         );

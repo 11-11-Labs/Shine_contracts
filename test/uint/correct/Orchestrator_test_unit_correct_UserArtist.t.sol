@@ -37,12 +37,12 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
     }
 
     function test_unit_correct_register_artist() public {
-        vm.startPrank(ARTIST.Address);
+        vm.startPrank(ARTIST_1.Address);
         uint256 artistId = orchestrator.register(
             true,
             "cool_artist99",
             "https://arweave.net/Vp_3kL9mR6v4N0zB1x8jS2qT5wZ7sC4yM0v9X1n2A8",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         vm.stopPrank();
 
@@ -54,7 +54,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
             "https://arweave.net/Vp_3kL9mR6v4N0zB1x8jS2qT5wZ7sC4yM0v9X1n2A8",
             "Artist metadata URI should match"
         );
-        assertEq(artist.Address, ARTIST.Address, "Artist address should match");
+        assertEq(artist.Address, ARTIST_1.Address, "Artist address should match");
         assertEq(artist.Balance, 0, "Artist balance should be zero");
         assertEq(
             artist.AccumulatedRoyalties,
@@ -69,10 +69,10 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
             true,
             "initial_artist",
             "https://arweave.net/initialURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
 
-        vm.startPrank(ARTIST.Address);
+        vm.startPrank(ARTIST_1.Address);
         orchestrator.chnageBasicData(
             true,
             artistId,
@@ -127,10 +127,10 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
             true,
             "artist_name",
             "https://arweave.net/artistURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
 
-        vm.startPrank(ARTIST.Address);
+        vm.startPrank(ARTIST_1.Address);
         orchestrator.changeAddress(true, artistId, WILDCARD_ACCOUNT.Address);
         vm.stopPrank();
 
@@ -147,7 +147,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
             "New address should map to correct artist ID"
         );
         assertEq(
-            artistDB.getId(ARTIST.Address),
+            artistDB.getId(ARTIST_1.Address),
             0,
             "Old address should no longer map to any artist ID"
         );

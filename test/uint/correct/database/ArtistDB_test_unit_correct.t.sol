@@ -15,7 +15,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         vm.stopPrank();
 
@@ -32,7 +32,7 @@ contract ArtistDB_test_unit_correct is Constants {
         );
         assertEq(
             _artistDB.getMetadata(assignedId).Address,
-            ARTIST.Address,
+            ARTIST_1.Address,
             "Artist address should match the registered address"
         );
         assertEq(
@@ -52,7 +52,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.changeBasicData(
             assignedId,
@@ -77,7 +77,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.changeAddress(assignedId, address(67));
         vm.stopPrank();
@@ -99,7 +99,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.addBalance(assignedId, 1000);
         vm.stopPrank();
@@ -116,7 +116,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.addBalance(assignedId, 1000);
         _artistDB.deductBalance(assignedId, 500);
@@ -134,7 +134,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.addAccumulatedRoyalties(assignedId, 1000);
         vm.stopPrank();
@@ -151,7 +151,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.addAccumulatedRoyalties(assignedId, 1000);
         _artistDB.deductAccumulatedRoyalties(assignedId, 500);
@@ -169,7 +169,7 @@ contract ArtistDB_test_unit_correct is Constants {
         uint256 assignedId = _artistDB.register(
             "Artist Name",
             "ipfs://metadataURI",
-            ARTIST.Address
+            ARTIST_1.Address
         );
         _artistDB.setBannedStatus(assignedId, true);
         vm.stopPrank();

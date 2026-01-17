@@ -83,8 +83,9 @@ abstract contract Constants is Test {
     AccountData API = ACCOUNT3;
     AccountData SUDO = ACCOUNT4;
     AccountData USER = ACCOUNT5;
-    AccountData ARTIST = ACCOUNT6;
-    AccountData WILDCARD_ACCOUNT = ACCOUNT7;
+    AccountData ARTIST_1 = ACCOUNT6;
+    AccountData ARTIST_2 = ACCOUNT7;
+    AccountData WILDCARD_ACCOUNT = ACCOUNT8;
 
     function setUp() public {
 
