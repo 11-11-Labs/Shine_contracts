@@ -76,60 +76,6 @@ contract Orchestrator is Ownable {
         stablecoin.current = _stablecoinAddress;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Funds Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-
-    function depositFunds(uint256 userId, uint256 amount) external {
-        if (userDB.getAddress(userId) != msg.sender)
-            revert ErrorsLib.AddressIsNotOwnerOfUserId();
-
-        IERC20(stablecoin.current).transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-
-        userDB.addBalance(userId, amount);
-    }
-
-    function depositFundsToAnotherUser(
-        uint256 toUserId,
-        uint256 amount
-    ) external userIdExists(toUserId) {
-        IERC20(stablecoin.current).transferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
-
-        userDB.addBalance(toUserId, amount);
-    }
-
-    function withdrawFunds(
-        bool isArtist,
-        uint256 userId,
-        uint256 amount
-    ) external {
-        if (isArtist) {
-            if (artistDB.getAddress(userId) != msg.sender)
-                revert ErrorsLib.AddressIsNotOwnerOfArtistId();
-
-            if (artistDB.getBalance(userId) < amount)
-                revert ErrorsLib.InsufficientBalance();
-
-            artistDB.deductBalance(userId, amount);
-        } else {
-            if (userDB.getAddress(userId) != msg.sender)
-                revert ErrorsLib.AddressIsNotOwnerOfUserId();
-
-            if (userDB.getBalance(userId) < amount)
-                revert ErrorsLib.InsufficientBalance();
-
-            userDB.deductBalance(userId, amount);
-        }
-
-        IERC20(stablecoin.current).transfer(msg.sender, amount);
-    }
-
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 User/Artist Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     function register(
@@ -182,6 +128,37 @@ contract Orchestrator is Ownable {
         }
     }
 
+    
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Funds Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+
+    function depositFunds(uint256 userId, uint256 amount) external {
+        if (userDB.getAddress(userId) != msg.sender)
+            revert ErrorsLib.AddressIsNotOwnerOfUserId();
+
+        IERC20(stablecoin.current).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        userDB.addBalance(userId, amount);
+    }
+
+    function depositFundsToAnotherUser(
+        uint256 toUserId,
+        uint256 amount
+    ) external userIdExists(toUserId) {
+        IERC20(stablecoin.current).transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
+
+        userDB.addBalance(toUserId, amount);
+    }
+
+    
     function makeDonation(
         uint256 userId,
         uint256 toArtistId,
@@ -195,6 +172,34 @@ contract Orchestrator is Ownable {
 
         emit EventsLib.DonationMade(userId, toArtistId, amount);
     }
+
+
+    function withdrawFunds(
+        bool isArtist,
+        uint256 userId,
+        uint256 amount
+    ) external {
+        if (isArtist) {
+            if (artistDB.getAddress(userId) != msg.sender)
+                revert ErrorsLib.AddressIsNotOwnerOfArtistId();
+
+            if (artistDB.getBalance(userId) < amount)
+                revert ErrorsLib.InsufficientBalance();
+
+            artistDB.deductBalance(userId, amount);
+        } else {
+            if (userDB.getAddress(userId) != msg.sender)
+                revert ErrorsLib.AddressIsNotOwnerOfUserId();
+
+            if (userDB.getBalance(userId) < amount)
+                revert ErrorsLib.InsufficientBalance();
+
+            userDB.deductBalance(userId, amount);
+        }
+
+        IERC20(stablecoin.current).transfer(msg.sender, amount);
+    }
+
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Song Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
@@ -365,6 +370,8 @@ contract Orchestrator is Ownable {
             maxSupplySpecialEdition <= albumDB.getTotalSupply(id)
         ) revert ErrorsLib.MustBeGreaterThanCurrent();
 
+        bool isSpecialEdition = albumDB.isAnSpecialEdition(id);
+
         albumDB.change(
             id,
             title,
@@ -373,9 +380,9 @@ contract Orchestrator is Ownable {
             musicIds,
             price,
             canBePurchased,
-            albumDB.isAnSpecialEdition(id),
-            albumDB.isAnSpecialEdition(id) ? specialEditionName : "",
-            albumDB.isAnSpecialEdition(id) ? maxSupplySpecialEdition : 0
+            isSpecialEdition,
+            isSpecialEdition ? specialEditionName : "",
+            isSpecialEdition ? maxSupplySpecialEdition : 0
         );
     }
 
