@@ -53,7 +53,7 @@ contract AlbumDB is IdUtils, Ownable {
      * @param MaxSupplySpecialEdition Maximum copies available for special editions
      * @param IsBanned Flag indicating if the album has been banned from the platform
      */
-    struct SongMetadata {
+    struct Metadata {
         string Title;
         uint256 PrincipalArtistId;
         string MetadataURI;
@@ -74,7 +74,7 @@ contract AlbumDB is IdUtils, Ownable {
 
     /// @notice Stores all album metadata indexed by album ID
     /// @dev Private mapping to prevent direct external access
-    mapping(uint256 Id => SongMetadata) private albums;
+    mapping(uint256 Id => Metadata) private albums;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -137,7 +137,7 @@ contract AlbumDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
-        albums[idAssigned] = SongMetadata({
+        albums[idAssigned] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
             MetadataURI: metadataURI,
@@ -241,7 +241,7 @@ contract AlbumDB is IdUtils, Ownable {
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         if (musicIds.length == 0) revert AlbumCannotHaveZeroSongs();
 
-        albums[id] = SongMetadata({
+        albums[id] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
             MetadataURI: metadataURI,
@@ -384,11 +384,11 @@ contract AlbumDB is IdUtils, Ownable {
     /**
      * @notice Retrieves all metadata for an album
      * @param id The album ID to query
-     * @return Complete SongMetadata struct with all album information
+     * @return Complete Metadata struct with all album information
      */
     function getMetadata(
         uint256 id
-    ) external view returns (SongMetadata memory) {
+    ) external view returns (Metadata memory) {
         return albums[id];
     }
 }

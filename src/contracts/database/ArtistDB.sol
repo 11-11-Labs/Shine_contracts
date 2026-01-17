@@ -39,7 +39,7 @@ contract ArtistDB is IdUtils, Ownable {
      * @param AccumulatedRoyalties Total royalties accumulated from music sales
      * @param IsBanned Flag indicating if the artist has been banned from the platform
      */
-    struct Artist {
+    struct Metadata {
         string Name;
         string MetadataURI;
         address Address;
@@ -55,7 +55,7 @@ contract ArtistDB is IdUtils, Ownable {
 
     /// @notice Stores all artist metadata indexed by artist ID
     /// @dev Private mapping to prevent direct external access
-    mapping(uint256 id => Artist) private artists;
+    mapping(uint256 id => Metadata) private artists;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -104,7 +104,7 @@ contract ArtistDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
-        artists[idAssigned] = Artist({
+        artists[idAssigned] = Metadata({
             Name: name,
             MetadataURI: metadataURI,
             Address: artistAddress,
@@ -221,7 +221,7 @@ contract ArtistDB is IdUtils, Ownable {
      * @param id The artist ID to query
      * @return Complete Artist struct with all information
      */
-    function getMetadata(uint256 id) external view returns (Artist memory) {
+    function getMetadata(uint256 id) external view returns (Metadata memory) {
         return artists[id];
     }
 

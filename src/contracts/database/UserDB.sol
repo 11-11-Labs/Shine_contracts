@@ -39,7 +39,7 @@ contract UserDB is IdUtils, Ownable {
      * @param Balance Current balance of the user account
      * @param IsBanned Flag indicating if the user has been banned from the platform
      */
-    struct User {
+    struct Metadata {
         string Username;
         string MetadataURI;
         address Address;
@@ -55,7 +55,7 @@ contract UserDB is IdUtils, Ownable {
 
     /// @notice Stores all user metadata indexed by user ID
     /// @dev Private mapping to prevent direct external access
-    mapping(uint256 Id => User) private users;
+    mapping(uint256 Id => Metadata) private users;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -104,7 +104,7 @@ contract UserDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
-        users[idAssigned] = User({
+        users[idAssigned] = Metadata({
             Username: username,
             MetadataURI: metadataURI,
             Address: userAddress,
@@ -310,7 +310,7 @@ contract UserDB is IdUtils, Ownable {
      * @param id The user ID to query
      * @return Complete User struct with all information
      */
-    function getMetadata(uint256 id) external view returns (User memory) {
+    function getMetadata(uint256 id) external view returns (Metadata memory) {
         return users[id];
     }
 

@@ -5,7 +5,6 @@ import {Test, console} from "forge-std/Test.sol";
 import {Constants} from "../../Constants.sol";
 import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
 import {UserDB} from "@shine/contracts/database/UserDB.sol";
-import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 
 contract Orchestrator_test_unit_correct_UserArtist is Constants {
     function test_unit_correct_register_user() public {
@@ -18,7 +17,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
         );
         vm.stopPrank();
 
-        UserDB.User memory user = userDB.getMetadata(userId);
+        UserDB.Metadata memory user = userDB.getMetadata(userId);
 
         assertEq(user.Username, "awesome_user67", "Username should match");
         assertEq(
@@ -46,7 +45,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
         );
         vm.stopPrank();
 
-        ArtistDB.Artist memory artist = artistDB.getMetadata(artistId);
+        ArtistDB.Metadata memory artist = artistDB.getMetadata(artistId);
 
         assertEq(artist.Name, "cool_artist99", "Name should match");
         assertEq(
@@ -81,7 +80,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
         );
         vm.stopPrank();
 
-        ArtistDB.Artist memory artist = artistDB.getMetadata(artistId);
+        ArtistDB.Metadata memory artist = artistDB.getMetadata(artistId);
 
         assertEq(artist.Name, "updated_artist", "Updated name should match");
         assertEq(
@@ -108,7 +107,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
         );
         vm.stopPrank();
 
-        UserDB.User memory user = userDB.getMetadata(userId);
+        UserDB.Metadata memory user = userDB.getMetadata(userId);
 
         assertEq(
             user.Username,
@@ -134,7 +133,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
         orchestrator.changeAddress(true, artistId, WILDCARD_ACCOUNT.Address);
         vm.stopPrank();
 
-        ArtistDB.Artist memory artist = artistDB.getMetadata(artistId);
+        ArtistDB.Metadata memory artist = artistDB.getMetadata(artistId);
 
         assertEq(
             artist.Address,
@@ -165,7 +164,7 @@ contract Orchestrator_test_unit_correct_UserArtist is Constants {
         orchestrator.changeAddress(false, userId, WILDCARD_ACCOUNT.Address);
         vm.stopPrank();
 
-        UserDB.User memory user = userDB.getMetadata(userId);
+        UserDB.Metadata memory user = userDB.getMetadata(userId);
 
         assertEq(
             user.Address,

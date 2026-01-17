@@ -3,9 +3,6 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Constants} from "../../Constants.sol";
-import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
-import {UserDB} from "@shine/contracts/database/UserDB.sol";
-import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 
 contract Orchestrator_test_unit_correct_Funds is Constants {
     uint256 USER_ID;

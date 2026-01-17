@@ -47,7 +47,7 @@ contract SongDB is IdUtils, Ownable {
      * @param TimesBought Counter tracking total number of purchases
      * @param IsBanned Flag indicating if the song has been banned from the platform
      */
-    struct SongMetadata {
+    struct Metadata {
         string Title;
         uint256 PrincipalArtistId;
         uint256[] ArtistIDs;
@@ -67,7 +67,7 @@ contract SongDB is IdUtils, Ownable {
 
     /// @notice Stores all song metadata indexed by song ID
     /// @dev Private mapping to prevent direct external access
-    mapping(uint256 Id => SongMetadata) private songs;
+    mapping(uint256 Id => Metadata) private songs;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -126,7 +126,7 @@ contract SongDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
-        songs[idAssigned] = SongMetadata({
+        songs[idAssigned] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
             ArtistIDs: artistIDs,
@@ -202,7 +202,7 @@ contract SongDB is IdUtils, Ownable {
         bool canBePurchased,
         uint256 price
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
-        songs[id] = SongMetadata({
+        songs[id] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
             ArtistIDs: artistIDs,
@@ -335,11 +335,11 @@ contract SongDB is IdUtils, Ownable {
     /**
      * @notice Retrieves all metadata for a song
      * @param id The song ID to query
-     * @return Complete SongMetadata struct with all song information
+     * @return Complete Metadata struct with all song information
      */
     function getMetadata(
         uint256 id
-    ) external view returns (SongMetadata memory) {
+    ) external view returns (Metadata memory) {
         return songs[id];
     }
 }
