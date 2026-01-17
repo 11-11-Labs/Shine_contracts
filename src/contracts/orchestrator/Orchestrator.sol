@@ -294,7 +294,7 @@ contract Orchestrator is Ownable {
         uint256 toUserId
     ) external senderIsArtistId(songDB.getPrincipalArtistId(songId)) {
 
-        songDB.purchase(songId, toUserId);
+        songDB.gift(songId, toUserId);
         userDB.addSong(toUserId, songId);
 
         emit EventsLib.SongGifted(songId, toUserId);
