@@ -355,10 +355,7 @@ contract Orchestrator is Ownable {
         bool canBePurchased,
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
-    ) external senderIsArtistId(principalArtistId) {
-        if (albumDB.getPrincipalArtistId(id) != principalArtistId)
-            revert ErrorsLib.SenderIsNotPrincipalArtist();
-
+    ) external senderIsArtistId(albumDB.getPrincipalArtistId(id)) {
         if (
             albumDB.isAnSpecialEdition(id) &&
             maxSupplySpecialEdition <= albumDB.getTotalSupply(id)
@@ -418,7 +415,6 @@ contract Orchestrator is Ownable {
         uint256 albumId,
         uint256 toUserId
     ) external senderIsArtistId(albumDB.getPrincipalArtistId(albumId)) {
-
         uint[] memory listOfSong = albumDB.gift(albumId, toUserId);
         userDB.addSongs(toUserId, listOfSong);
 

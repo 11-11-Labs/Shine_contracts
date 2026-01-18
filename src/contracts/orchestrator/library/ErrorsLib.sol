@@ -18,26 +18,13 @@ library ErrorsLib {
    error AddressSetupAlreadyDone();
    error AddressIsNotOwnerOfArtistId();
    error AddressIsNotOwnerOfUserId();
-   error ArtistIdIsNotPrincipalArtistIdOfSong();
-
-   error SenderIsNotPrincipalArtist();
-   
    error TitleCannotBeEmpty();
    error SpecialEditionNameCannotBeEmpty();
-
-
    error MustBeGreaterThanCurrent();
-
    error MaxSupplyMustBeGreaterThanZero();
-
    error ArtistIdDoesNotExist(uint256 artistId);
    error SongIdDoesNotExist(uint256 songId);
    error UserIdDoesNotExist();
-
-
    error InsufficientBalance();
-
    error ListCannotContainSongsFromDifferentPrincipalArtist();
-
-
 }
