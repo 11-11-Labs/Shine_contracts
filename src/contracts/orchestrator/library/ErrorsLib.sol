@@ -37,5 +37,7 @@ library ErrorsLib {
 
    error InsufficientBalance();
 
+   error ListCannotContainSongsFromDifferentPrincipalArtist();
+
 
 }
