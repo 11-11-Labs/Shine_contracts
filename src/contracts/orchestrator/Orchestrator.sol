@@ -275,7 +275,7 @@ contract Orchestrator is Ownable {
         songDB.changePrice(songId, price);
     }
 
-    function purchaseSong(uint256 songId) external {
+    function purchaseSong(uint256 songId, uint256 extraAmount) external {
         uint256 userID = userDB.getId(msg.sender);
         songDB.purchase(songId, userID);
         userDB.addSong(userID, songId);
@@ -283,7 +283,8 @@ contract Orchestrator is Ownable {
         _executePayment(
             userID,
             songDB.getPrincipalArtistId(songId),
-            songDB.getPrice(songId)
+            songDB.getPrice(songId),
+            extraAmount
         );
 
         emit EventsLib.SongPurchased(songId, userID, songDB.getPrice(songId));
@@ -293,7 +294,6 @@ contract Orchestrator is Ownable {
         uint256 songId,
         uint256 toUserId
     ) external senderIsArtistId(songDB.getPrincipalArtistId(songId)) {
-
         songDB.gift(songId, toUserId);
         userDB.addSong(toUserId, songId);
 
@@ -400,7 +400,7 @@ contract Orchestrator is Ownable {
         albumDB.changePrice(albumId, price);
     }
 
-    function purchaseAlbum(uint256 albumId) external {
+    function purchaseAlbum(uint256 albumId, uint256 extraAmount) external {
         uint256 userID = userDB.getId(msg.sender);
 
         uint[] memory listOfSong = albumDB.purchase(albumId, userID);
@@ -409,7 +409,8 @@ contract Orchestrator is Ownable {
         _executePayment(
             userID,
             albumDB.getPrincipalArtistId(albumId),
-            albumDB.getPrice(albumId)
+            albumDB.getPrice(albumId),
+            extraAmount
         );
 
         emit EventsLib.AlbumPurchased(
@@ -588,19 +589,29 @@ contract Orchestrator is Ownable {
     function _executePayment(
         uint256 userId,
         uint256 artistId,
-        uint256 price
+        uint256 netPrice,
+        uint256 extraAmount
     ) internal {
-        if (price != 0) {
-            uint256 userBalance = userDB.getBalance(userId);
+        uint256 userBalance = userDB.getBalance(userId);
+
+        if (netPrice != 0) {
             (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(
-                price
+                netPrice
             );
             if (userBalance < totalPrice)
                 revert ErrorsLib.InsufficientBalance();
 
             userDB.deductBalance(userId, totalPrice);
-            artistDB.addBalance(artistId, price);
+            artistDB.addBalance(artistId, netPrice);
             amountCollectedInFees += calculatedFee;
+        }
+
+        if (extraAmount > 0) {
+            if (userBalance < extraAmount)
+                revert ErrorsLib.InsufficientBalance();
+
+            userDB.deductBalance(userId, extraAmount);
+            artistDB.addBalance(artistId, extraAmount);
         }
     }
 }
