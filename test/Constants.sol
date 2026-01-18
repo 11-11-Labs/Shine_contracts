@@ -155,7 +155,6 @@ abstract contract Constants is Test {
         vm.stopPrank();
     }
 
-
     function _execute_orchestrator_registerSong(
         address principalArtistAddress,
         string memory title,
@@ -163,8 +162,8 @@ abstract contract Constants is Test {
         uint256[] memory featuredArtistIds,
         string memory mediaURI,
         string memory metadataURI,
-        bool isExplicit,
-        uint256 royaltyBps
+        bool canBePurchased,
+        uint256 netprice
     ) internal virtual returns (uint256) {
         vm.startPrank(principalArtistAddress);
         uint256 songId = orchestrator.registerSong(
@@ -173,8 +172,8 @@ abstract contract Constants is Test {
             featuredArtistIds,
             mediaURI,
             metadataURI,
-            isExplicit,
-            royaltyBps
+            canBePurchased,
+            netprice
         );
         vm.stopPrank();
         return songId;
