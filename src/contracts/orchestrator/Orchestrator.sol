@@ -205,7 +205,7 @@ contract Orchestrator is Ownable {
         string memory mediaURI,
         string memory metadataURI,
         bool canBePurchased,
-        uint256 price
+        uint256 netprice
     ) external senderIsArtistId(principalArtistId) returns (uint256) {
         if (artistIDs.length > 0) {
             for (uint256 i = 0; i < artistIDs.length; i++) {
@@ -224,7 +224,7 @@ contract Orchestrator is Ownable {
                 mediaURI,
                 metadataURI,
                 canBePurchased,
-                price
+                netprice
             );
     }
 
@@ -427,7 +427,7 @@ contract Orchestrator is Ownable {
         if (albumDB.getPrincipalArtistId(albumId) != artistId)
             revert ErrorsLib.SenderIsNotPrincipalArtist();
 
-        uint[] memory listOfSong = albumDB.purchase(albumId, toUserId);
+        uint[] memory listOfSong = albumDB.gift(albumId, toUserId);
         userDB.addSongs(toUserId, listOfSong);
 
         emit EventsLib.AlbumGifted(albumId, toUserId);
@@ -599,7 +599,7 @@ contract Orchestrator is Ownable {
                 revert ErrorsLib.InsufficientBalance();
 
             userDB.deductBalance(userId, totalPrice);
-            userDB.addBalance(artistId, price);
+            artistDB.addBalance(artistId, price);
             amountCollectedInFees += calculatedFee;
         }
     }
