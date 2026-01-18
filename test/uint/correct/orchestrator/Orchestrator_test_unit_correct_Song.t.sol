@@ -195,5 +195,191 @@ contract Orchestrator_test_unit_correct_Song is Constants {
         assertFalse(song.CanBePurchased, "Song should not be purchasable");
     }
 
-    
+    function test_unit_correct_purchaseSong_noExtra() public {
+        uint256[] memory artistIDs = new uint256[](1);
+        artistIDs[0] = ARTIST_2_ID;
+
+        uint256 netPrice = 1000;
+
+        uint256 songID = _execute_orchestrator_registerSong(
+            ARTIST_1.Address,
+            "Purchasable Song",
+            ARTIST_1_ID,
+            artistIDs,
+            "https://arweave.net/mediaURI",
+            "https://arweave.net/metadataURI",
+            true,
+            netPrice
+        );
+
+        (uint256 totalPrice, uint256 calculatedFee) = orchestrator
+            .getPriceWithFee(netPrice);
+
+        _execute_orchestrator_depositFunds(USER_ID, USER.Address, totalPrice);
+
+        vm.startPrank(USER.Address);
+        orchestrator.purchaseSong(songID, 0);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(USER_ID);
+
+        uint256[] memory expectedSongs = new uint256[](1);
+        expectedSongs[0] = songID;
+
+        assertEq(
+            purchasedSongs,
+            expectedSongs,
+            "User should have one purchased song"
+        );
+
+        assertEq(
+            songDB.getMetadata(songID).TimesBought,
+            1,
+            "Song's times bought should be incremented"
+        );
+
+        assertEq(
+            userDB.getMetadata(USER_ID).Balance,
+            0,
+            "User's balance should be zero after purchase"
+        );
+
+        assertEq(
+            artistDB.getMetadata(ARTIST_1_ID).Balance,
+            netPrice,
+            "Principal artist's balance should be updated"
+        );
+
+        vm.startPrank(ADMIN.Address);
+        uint256 feesCollected = orchestrator.getAmountCollectedInFees();
+        vm.stopPrank();
+
+        assertEq(
+            feesCollected,
+            calculatedFee,
+            "Platform fees collected should match the calculated fee"
+        );
+    }
+
+    function test_unit_correct_purchaseSong_extra() public {
+        uint256[] memory artistIDs = new uint256[](1);
+        artistIDs[0] = ARTIST_2_ID;
+
+        uint256 netPrice = 1000;
+        uint256 extraAmount = 500;
+
+        uint256 songID = _execute_orchestrator_registerSong(
+            ARTIST_1.Address,
+            "Purchasable Song",
+            ARTIST_1_ID,
+            artistIDs,
+            "https://arweave.net/mediaURI",
+            "https://arweave.net/metadataURI",
+            true,
+            netPrice
+        );
+
+        (uint256 totalPrice, uint256 calculatedFee) = orchestrator
+            .getPriceWithFee(netPrice);
+
+        _execute_orchestrator_depositFunds(
+            USER_ID,
+            USER.Address,
+            totalPrice + extraAmount
+        );
+
+        vm.startPrank(USER.Address);
+        orchestrator.purchaseSong(songID, extraAmount);
+        vm.stopPrank();
+
+        uint256[] memory purchasedSongs = userDB.getPurchasedSong(USER_ID);
+
+        uint256[] memory expectedSongs = new uint256[](1);
+        expectedSongs[0] = songID;
+
+        assertEq(
+            purchasedSongs,
+            expectedSongs,
+            "User should have one purchased song"
+        );
+
+        assertEq(
+            songDB.getMetadata(songID).TimesBought,
+            1,
+            "Song's times bought should be incremented"
+        );
+
+        assertEq(
+            userDB.getMetadata(USER_ID).Balance,
+            0,
+            "User's balance should be zero after purchase"
+        );
+
+        assertEq(
+            artistDB.getMetadata(ARTIST_1_ID).Balance,
+            netPrice + extraAmount,
+            "Principal artist's balance should be updated"
+        );
+
+        vm.startPrank(ADMIN.Address);
+        uint256 feesCollected = orchestrator.getAmountCollectedInFees();
+        vm.stopPrank();
+
+        assertEq(
+            feesCollected,
+            calculatedFee,
+            "Platform fees collected should match the calculated fee"
+        );
+    }
+
+    function test_unit_correct_giftSong() public {
+        uint256[] memory artistIDs = new uint256[](1);
+        artistIDs[0] = ARTIST_2_ID;
+
+        uint256 netPrice = 1000;
+
+        uint256 songID = _execute_orchestrator_registerSong(
+            ARTIST_1.Address,
+            "Giftable Song",
+            ARTIST_1_ID,
+            artistIDs,
+            "https://arweave.net/mediaURI",
+            "https://arweave.net/metadataURI",
+            true,
+            netPrice
+        );
+
+        vm.startPrank(ARTIST_1.Address);
+        orchestrator.giftSong(songID, USER_ID);
+        vm.stopPrank();
+
+        uint256[] memory giftedSongs = userDB.getPurchasedSong(USER_ID);
+
+        uint256[] memory expectedSongs = new uint256[](1);
+        expectedSongs[0] = songID;
+
+        assertEq(
+            giftedSongs,
+            expectedSongs,
+            "Recipient should have the gifted song"
+        );
+
+        assertEq(
+            songDB.getMetadata(songID).TimesBought,
+            1,
+            "Song's times bought should be incremented"
+        );
+
+        assertEq(
+            userDB.getMetadata(USER_ID).Balance,
+            0,
+            "Gifter's balance should be unchanged after gifting"
+        );
+
+        assertEq(
+            artistDB.getMetadata(ARTIST_1_ID).Balance,
+            0,
+            "Principal artist's balance should be unchanged after gifting"
+        );
+    }
 }
