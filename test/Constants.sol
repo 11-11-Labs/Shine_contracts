@@ -90,7 +90,11 @@ abstract contract Constants is Test {
     function setUp() public {
         usdc = new MockUsdc();
 
-        orchestrator = new Orchestrator(ADMIN.Address, address(usdc));
+        orchestrator = new Orchestrator(
+            ADMIN.Address,
+            address(usdc),
+            2_50 // 2.5% fee in basis points
+        );
 
         albumDB = new AlbumDB(address(orchestrator));
         artistDB = new ArtistDB(address(orchestrator));
@@ -178,7 +182,6 @@ abstract contract Constants is Test {
         vm.stopPrank();
         return songId;
     }
-
 }
 
 contract MockUsdc is ERC20 {

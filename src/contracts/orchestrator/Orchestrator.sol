@@ -821,6 +821,22 @@ contract Orchestrator is Ownable {
     }
 
     /**
+     * @notice Gets the current platform fee percentage
+     * @return The fee percentage in basis points (100 = 1%, 10000 = 100%)
+     */
+    function getFeePercentage() external view returns (uint16) {
+        return percentageFee;
+    }
+
+    /**
+     * @notice Gets the current stablecoin address used for payments
+     * @return Address of the stablecoin ERC20 token
+     */
+    function getStablecoinAddress() external view returns (address) {
+        return stablecoin.current;
+    }
+
+    /**
      * @notice Gets the address of the AlbumDB contract
      * @return Address of the AlbumDB contract
      */
