@@ -7,24 +7,61 @@ pragma solidity ^0.8.20;
  _\ `./ ` / / || / _/  イ
 /___,/_n_/_/_/|_/___/  ヌ
                       
-                                                            
- * @title Shine ISongDB
+ * @title Shine ErrorsLib
  * @author 11:11 Labs 
- * @notice This contract manages song metadata, user purchases, 
- *         and admin functionalities for the Shine platform.
+ * @notice Library containing all custom error definitions for the Orchestrator contract
+ *         and its interactions with database contracts. These errors provide detailed
+ *         revert messages for validation and access control failures.
+ * @dev This library is used by the Orchestrator to handle domain-specific errors
+ *      related to artist/user management, content registration, and fund transfers.
  */
 
 library ErrorsLib {
-   error AddressSetupAlreadyDone();
-   error AddressIsNotOwnerOfArtistId();
-   error AddressIsNotOwnerOfUserId();
-   error TitleCannotBeEmpty();
-   error SpecialEditionNameCannotBeEmpty();
-   error MustBeGreaterThanCurrent();
-   error MaxSupplyMustBeGreaterThanZero();
-   error ArtistIdDoesNotExist(uint256 artistId);
-   error SongIdDoesNotExist(uint256 songId);
-   error UserIdDoesNotExist();
-   error InsufficientBalance();
-   error ListCannotContainSongsFromDifferentPrincipalArtist();
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Setup Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when attempting to set database addresses after they have already been initialized
+    error AddressSetupAlreadyDone();
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Access Control Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when caller is not the owner of the specified artist ID
+    error AddressIsNotOwnerOfArtistId();
+    
+    /// @dev Thrown when caller is not the owner of the specified user ID
+    error AddressIsNotOwnerOfUserId();
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Validation Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when a title parameter is empty or zero-length
+    error TitleCannotBeEmpty();
+    
+    /// @dev Thrown when a special edition name is empty or zero-length
+    error SpecialEditionNameCannotBeEmpty();
+    
+    /// @dev Thrown when a proposed value is not greater than the current value
+    error MustBeGreaterThanCurrent();
+    
+    /// @dev Thrown when max supply for a special edition is zero or invalid
+    error MaxSupplyMustBeGreaterThanZero();
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Existence Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when referencing an artist ID that does not exist
+    error ArtistIdDoesNotExist(uint256 artistId);
+    
+    /// @dev Thrown when referencing a song ID that does not exist
+    error SongIdDoesNotExist(uint256 songId);
+    
+    /// @dev Thrown when referencing a user ID that does not exist
+    error UserIdDoesNotExist();
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Balance & Fund Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when an account has insufficient balance for the requested operation
+    error InsufficientBalance();
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Content Validation Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when attempting to create an album with songs from different principal artists
+    error ListCannotContainSongsFromDifferentPrincipalArtist();
 }

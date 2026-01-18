@@ -7,11 +7,14 @@ pragma solidity ^0.8.20;
  _\ `./ ` / / || / _/  イ
 /___,/_n_/_/_/|_/___/  ヌ
                       
-                                                            
- * @title Shine ISongDB
+ * @title Shine Orchestrator
  * @author 11:11 Labs 
- * @notice This contract manages song metadata, user purchases, 
- *         and admin functionalities for the Shine platform.
+ * @notice Central orchestration contract that coordinates all interactions with database contracts
+ *         (AlbumDB, ArtistDB, SongDB, UserDB). Manages user/artist registration, purchases, 
+ *         payments, donations, and administrative functions for the Shine music platform.
+ * @dev Acts as the sole owner of all database contracts, enforcing access control and ensuring
+ *      consistent business logic across the platform. Handles stablecoin payments, fee collection,
+ *      and orchestrates complex multi-contract transactions.
  */
 
 import {Ownable} from "@solady/auth/Ownable.sol";
@@ -26,58 +29,115 @@ import {IArtistDB} from "@shine/interface/IArtistDB.sol";
 import {IUserDB} from "@shine/interface/IUserDB.sol";
 
 contract Orchestrator is Ownable {
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @notice Address of the next Orchestrator contract in case of migration
     address private newOrchestratorAddress;
+    
+    /// @notice Total amount of platform fees collected from transactions
     uint256 private amountCollectedInFees;
+    
+    /// @notice Current and proposed stablecoin addresses with timelock for upgrades
     StructsLib.AddressProposal private stablecoin;
+    
+    /// @notice Addresses of all database contracts (Album, Artist, Song, User)
     StructsLib.DataBaseList private dbAddress;
+    
+    /// @notice Operational breaker flags for initialization and state control
     StructsLib.Breakers private breaker;
+    
+    /// @notice Platform fee percentage in basis points (100 = 1%, 10000 = 100%)
     uint16 private percentageFee;
 
+    /// @notice Interface references to all database contracts
     ISongDB private songDB;
     IAlbumDB private albumDB;
     IArtistDB private artistDB;
     IUserDB private userDB;
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /**
+     * @notice Validates that the sender is the owner of the specified user ID
+     * @param userId The user ID to validate against the sender
+     */
     modifier senderIsUserId(uint256 userId) {
         if (userDB.getAddress(userId) != msg.sender)
             revert ErrorsLib.AddressIsNotOwnerOfUserId();
         _;
     }
 
+    /**
+     * @notice Validates that the specified user ID exists
+     * @param userId The user ID to check for existence
+     */
     modifier userIdExists(uint256 userId) {
         if (!userDB.exists(userId)) revert ErrorsLib.UserIdDoesNotExist();
         _;
     }
 
+    /**
+     * @notice Validates that the sender is the owner of the specified artist ID
+     * @param artistId The artist ID to validate against the sender
+     */
     modifier senderIsArtistId(uint256 artistId) {
         if (artistDB.getAddress(artistId) != msg.sender)
             revert ErrorsLib.AddressIsNotOwnerOfArtistId();
         _;
     }
 
+    /**
+     * @notice Validates that the specified artist ID exists
+     * @param artistId The artist ID to check for existence
+     */
     modifier artistIdExists(uint256 artistId) {
         if (!artistDB.exists(artistId))
             revert ErrorsLib.ArtistIdDoesNotExist(artistId);
         _;
     }
 
+    /**
+     * @notice Validates that the specified song ID exists
+     * @param songId The song ID to check for existence
+     */
     modifier songIdExists(uint256 songId) {
         if (!songDB.exists(songId)) revert ErrorsLib.SongIdDoesNotExist(songId);
         _;
     }
 
+    /**
+     * @notice Validates that the specified album ID exists
+     * @param albumId The album ID to check for existence
+     */
     modifier albumIdExists(uint256 albumId) {
         if (!albumDB.exists(albumId)) revert();
         _;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Constructor 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /**
+     * @notice Initializes the Orchestrator contract with owner and stablecoin address
+     * @dev Sets the initial owner and stablecoin token used for all platform transactions
+     * @param initialOwner Address that will have owner privileges for administrative functions
+     * @param _stablecoinAddress Address of the stablecoin ERC20 token used for payments
+     */
     constructor(address initialOwner, address _stablecoinAddress) {
         _initializeOwner(initialOwner);
         stablecoin.current = _stablecoinAddress;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 User/Artist Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 User/Artist Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Registers a new user or artist in the platform
+     * @dev Routes registration to either ArtistDB or UserDB based on isArtist flag
+     * @param isArtist True to register as artist, false to register as user
+     * @param name The display name for the user/artist
+     * @param metadataURI URI pointing to off-chain profile metadata (e.g., IPFS)
+     * @param addressToUse The blockchain address associated with this user/artist
+     * @return The newly assigned ID for the registered user/artist
+     */
     function register(
         bool isArtist,
         string memory name,
@@ -91,6 +151,14 @@ contract Orchestrator is Ownable {
         }
     }
 
+    /**
+     * @notice Updates basic profile data for a user or artist
+     * @dev Only the owner of the ID can update their own profile
+     * @param isArtist True to update artist profile, false for user profile
+     * @param id The user/artist ID to update
+     * @param name New display name
+     * @param metadataURI New metadata URI for profile information
+     */
     function chnageBasicData(
         bool isArtist,
         uint256 id,
@@ -110,6 +178,13 @@ contract Orchestrator is Ownable {
         }
     }
 
+    /**
+     * @notice Changes the blockchain address associated with a user/artist account
+     * @dev Only the current owner of the ID can change the address. Enables address transfers.
+     * @param isArtist True to change artist address, false for user address
+     * @param id The user/artist ID whose address to change
+     * @param newAddress The new blockchain address to associate with this account
+     */
     function changeAddress(
         bool isArtist,
         uint256 id,
@@ -128,8 +203,14 @@ contract Orchestrator is Ownable {
         }
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Funds Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Fund Management 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Deposits stablecoin funds into a user's account balance
+     * @dev Only the user owner can deposit into their own account. Requires prior token approval.
+     * @param userId The user ID to receive the deposited funds
+     * @param amount The amount of stablecoin to deposit (in token units)
+     */
     function depositFunds(uint256 userId, uint256 amount) external {
         if (userDB.getAddress(userId) != msg.sender)
             revert ErrorsLib.AddressIsNotOwnerOfUserId();
@@ -143,6 +224,12 @@ contract Orchestrator is Ownable {
         userDB.addBalance(userId, amount);
     }
 
+    /**
+     * @notice Deposits stablecoin funds into another user's account (e.g., gift of funds)
+     * @dev Any address can deposit funds to any valid user. Requires prior token approval.
+     * @param toUserId The recipient user ID
+     * @param amount The amount of stablecoin to deposit (in token units)
+     */
     function depositFundsToAnotherUser(
         uint256 toUserId,
         uint256 amount
@@ -156,6 +243,13 @@ contract Orchestrator is Ownable {
         userDB.addBalance(toUserId, amount);
     }
 
+    /**
+     * @notice Allows a user to donate funds directly to an artist
+     * @dev Transfers funds from user balance to artist balance. User must have sufficient balance.
+     * @param userId The ID of the user making the donation
+     * @param toArtistId The ID of the artist receiving the donation
+     * @param amount The donation amount in stablecoin units
+     */
     function makeDonation(
         uint256 userId,
         uint256 toArtistId,
@@ -170,6 +264,13 @@ contract Orchestrator is Ownable {
         emit EventsLib.DonationMade(userId, toArtistId, amount);
     }
 
+    /**
+     * @notice Withdraws stablecoin funds from a user/artist account to their blockchain address
+     * @dev Only the owner of the account can withdraw. Requires sufficient balance.
+     * @param isArtist True to withdraw from artist account, false for user account
+     * @param userId The artist/user ID to withdraw from
+     * @param amount The amount of stablecoin to withdraw
+     */
     function withdrawFunds(
         bool isArtist,
         uint256 userId,
@@ -196,8 +297,21 @@ contract Orchestrator is Ownable {
         IERC20(stablecoin.current).transfer(msg.sender, amount);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Song Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Song Management 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Registers a new song to the platform
+     * @dev Only the principal artist can register songs. Validates all featured artists exist.
+     *      Validates title is not empty. Song price should be the net artist rate.
+     * @param title Display name of the song
+     * @param principalArtistId The main artist ID (must be the sender)
+     * @param artistIDs Array of featured artist IDs (can be empty)
+     * @param mediaURI URI pointing to the song audio/media (e.g., IPFS or CDN)
+     * @param metadataURI URI pointing to song metadata (e.g., IPFS)
+     * @param canBePurchased Whether the song is available for purchase
+     * @param netprice The net artist price (before platform fees)
+     * @return The newly assigned song ID
+     */
     function registerSong(
         string memory title,
         uint256 principalArtistId,
@@ -228,6 +342,17 @@ contract Orchestrator is Ownable {
             );
     }
 
+    /**
+     * @notice Updates all metadata for an existing song
+     * @dev Only the principal artist can update. Cannot modify principal artist.
+     * @param id The song ID to update
+     * @param title New song title
+     * @param artistIDs New featured artists array
+     * @param mediaURI New media URI
+     * @param metadataURI New metadata URI
+     * @param canBePurchased New purchasability status
+     * @param price New net artist price
+     */
     function changeSongFullData(
         uint256 id,
         string memory title,
@@ -253,6 +378,12 @@ contract Orchestrator is Ownable {
         );
     }
 
+    /**
+     * @notice Updates whether a song is available for purchase
+     * @dev Only the principal artist can modify purchasability
+     * @param songId The song ID to update
+     * @param canBePurchased New purchasability status
+     */
     function changeSongPurchaseability(
         uint256 songId,
         bool canBePurchased
@@ -264,6 +395,12 @@ contract Orchestrator is Ownable {
         songDB.changePurchaseability(songId, canBePurchased);
     }
 
+    /**
+     * @notice Updates the net price of a song
+     * @dev Only the principal artist can modify pricing
+     * @param songId The song ID to update
+     * @param price New net artist price (before platform fees)
+     */
     function changeSongPrice(
         uint256 songId,
         uint256 price
@@ -275,6 +412,13 @@ contract Orchestrator is Ownable {
         songDB.changePrice(songId, price);
     }
 
+    /**
+     * @notice Processes a song purchase for a user
+     * @dev Caller must have sufficient balance to cover price + fees. Adds song to user's library.
+     *      Transfers net price to artist and collects platform fees.
+     * @param songId The song ID to purchase
+     * @param extraAmount Optional tip/extra amount beyond the song price (sent to artist)
+     */
     function purchaseSong(uint256 songId, uint256 extraAmount) external {
         uint256 userID = userDB.getId(msg.sender);
         songDB.purchase(songId, userID);
@@ -290,6 +434,12 @@ contract Orchestrator is Ownable {
         emit EventsLib.SongPurchased(songId, userID, songDB.getPrice(songId));
     }
 
+    /**
+     * @notice Gifts a song to a user without requiring payment
+     * @dev Only the principal artist can gift their songs
+     * @param songId The song ID to gift
+     * @param toUserId The user ID to receive the gift
+     */
     function giftSong(
         uint256 songId,
         uint256 toUserId
@@ -300,8 +450,23 @@ contract Orchestrator is Ownable {
         emit EventsLib.SongGifted(songId, toUserId);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Album Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Album Management 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Registers a new album to the platform
+     * @dev Only the principal artist can register albums. All songs must belong to the same principal artist.
+     *      For special editions, maxSupplySpecialEdition and specialEditionName must be provided.
+     * @param title Display name of the album
+     * @param principalArtistId The main artist ID (must be the sender)
+     * @param metadataURI URI pointing to album metadata (e.g., IPFS)
+     * @param songIDs Array of song IDs to include in the album
+     * @param price The net album price (before platform fees)
+     * @param canBePurchased Whether the album is available for purchase
+     * @param isASpecialEdition Whether this is a limited edition release
+     * @param specialEditionName Name/label for the special edition
+     * @param maxSupplySpecialEdition Maximum copies available (0 if not special edition)
+     * @return The newly assigned album ID
+     */
     function registerAlbum(
         string memory title,
         uint256 principalArtistId,
@@ -345,6 +510,19 @@ contract Orchestrator is Ownable {
             );
     }
 
+    /**
+     * @notice Updates all metadata for an existing album
+     * @dev Only the principal artist can update. Cannot increase special edition supply below current sales.
+     * @param id The album ID to update
+     * @param title New album title
+     * @param principalArtistId Principal artist (must remain the same)
+     * @param metadataURI New metadata URI
+     * @param musicIds New array of song IDs
+     * @param price New net album price
+     * @param canBePurchased New purchasability status
+     * @param specialEditionName Name for special edition
+     * @param maxSupplySpecialEdition Maximum supply for special edition
+     */
     function changeAlbumFullData(
         uint256 id,
         string memory title,
@@ -377,6 +555,12 @@ contract Orchestrator is Ownable {
         );
     }
 
+    /**
+     * @notice Updates whether an album is available for purchase
+     * @dev Only the principal artist can modify purchasability
+     * @param albumId The album ID to update
+     * @param canBePurchased New purchasability status
+     */
     function changeAlbumPurchaseability(
         uint256 albumId,
         bool canBePurchased
@@ -384,6 +568,12 @@ contract Orchestrator is Ownable {
         albumDB.changePurchaseability(albumId, canBePurchased);
     }
 
+    /**
+     * @notice Updates the net price of an album
+     * @dev Only the principal artist can modify pricing
+     * @param albumId The album ID to update
+     * @param price New net album price (before platform fees)
+     */
     function changeAlbumPrice(
         uint256 albumId,
         uint256 price
@@ -391,6 +581,13 @@ contract Orchestrator is Ownable {
         albumDB.changePrice(albumId, price);
     }
 
+    /**
+     * @notice Processes an album purchase for a user
+     * @dev Caller must have sufficient balance to cover price + fees. Adds all songs to user's library.
+     *      Transfers net price to artist and collects platform fees.
+     * @param albumId The album ID to purchase
+     * @param extraAmount Optional tip/extra amount beyond the album price (sent to artist)
+     */
     function purchaseAlbum(uint256 albumId, uint256 extraAmount) external {
         uint256 userID = userDB.getId(msg.sender);
 
@@ -411,6 +608,12 @@ contract Orchestrator is Ownable {
         );
     }
 
+    /**
+     * @notice Gifts an album to a user without requiring payment
+     * @dev Only the principal artist can gift their albums
+     * @param albumId The album ID to gift
+     * @param toUserId The user ID to receive the gift
+     */
     function giftAlbum(
         uint256 albumId,
         uint256 toUserId
@@ -421,8 +624,17 @@ contract Orchestrator is Ownable {
         emit EventsLib.AlbumGifted(albumId, toUserId);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Admin Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Administrative Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Initializes the database contract addresses for the Orchestrator
+     * @dev Can only be called once. Sets up references to all four database contracts.
+     *      After this, cannot be changed without migration.
+     * @param _dbalbum Address of the AlbumDB contract
+     * @param _dbartist Address of the ArtistDB contract
+     * @param _dbsong Address of the SongDB contract
+     * @param _dbuser Address of the UserDB contract
+     */
     function setDatabaseAddresses(
         address _dbalbum,
         address _dbartist,
@@ -444,12 +656,23 @@ contract Orchestrator is Ownable {
         breaker.addressSetup = bytes1(0x01);
     }
 
+    /**
+     * @notice Sets the platform fee percentage
+     * @dev Fees are specified in basis points (100 = 1%, 10000 = 100%)
+     *      Fee is applied to all song and album purchases, but not to donations.
+     * @param _percentageFee Fee percentage in basis points (max 10000)
+     */
     function addPercentageFee(uint16 _percentageFee) external onlyOwner {
         /// @dev percentage fee is in basis points (100 = 1%)
         if (_percentageFee > 10000) revert(); // max 100%
         percentageFee = _percentageFee;
     }
 
+    /**
+     * @notice Proposes a new stablecoin address with a 1-day timelock
+     * @dev Requires executeStablecoinAddressChange() to be called after the timelock expires
+     * @param newStablecoinAddress The new stablecoin ERC20 token address
+     */
     function proposeStablecoinAddressChange(
         address newStablecoinAddress
     ) external onlyOwner {
@@ -458,11 +681,19 @@ contract Orchestrator is Ownable {
         stablecoin.timeToExecute = block.timestamp + 1 days;
     }
 
+    /**
+     * @notice Cancels a pending stablecoin address change
+     * @dev Clears the proposed address and timelock
+     */
     function cancelStablecoinAddressChange() external onlyOwner {
         stablecoin.proposed = address(0);
         stablecoin.timeToExecute = 0;
     }
 
+    /**
+     * @notice Executes a previously proposed stablecoin address change
+     * @dev Can only be called after the 1-day timelock has expired
+     */
     function executeStablecoinAddressChange() external onlyOwner {
         if (
             stablecoin.proposed == address(0) ||
@@ -473,6 +704,13 @@ contract Orchestrator is Ownable {
         stablecoin.timeToExecute = 0;
     }
 
+    /**
+     * @notice Migrates all database ownership to a new Orchestrator contract
+     * @dev Transfers ownership of all databases and any collected fees and remaining balance
+     *      to the new orchestrator. Used for contract upgrades.
+     * @param orchestratorAddressToMigrate Address of the new Orchestrator contract
+     * @param accountToTransferCollectedFees Address to receive the collected platform fees
+     */
     function migrateOrchestrator(
         address orchestratorAddressToMigrate,
         address accountToTransferCollectedFees
@@ -499,6 +737,12 @@ contract Orchestrator is Ownable {
         newOrchestratorAddress = orchestratorAddressToMigrate;
     }
 
+    /**
+     * @notice Withdraws collected platform fees to an external address
+     * @dev Only the owner can withdraw fees. Reduces amountCollectedInFees accordingly.
+     * @param to Address to receive the withdrawn fees
+     * @param amount Amount of fees to withdraw
+     */
     function withdrawCollectedFees(
         address to,
         uint256 amount
@@ -508,6 +752,12 @@ contract Orchestrator is Ownable {
         IERC20(stablecoin.current).transfer(to, amount);
     }
 
+    /**
+     * @notice Distributes collected platform fees to an artist's account balance
+     * @dev Only the owner can distribute fees
+     * @param artistId The artist ID to receive the fees
+     * @param amount Amount of fees to distribute
+     */
     function giveCollectedFeesToArtist(
         uint256 artistId,
         uint256 amount
@@ -518,6 +768,12 @@ contract Orchestrator is Ownable {
         artistDB.addBalance(artistId, amount);
     }
 
+    /**
+     * @notice Distributes collected platform fees to a user's account balance
+     * @dev Only the owner can distribute fees
+     * @param userId The user ID to receive the fees
+     * @param amount Amount of fees to distribute
+     */
     function giveCollectedFeesToUser(
         uint256 userId,
         uint256 amount
@@ -528,6 +784,11 @@ contract Orchestrator is Ownable {
         userDB.addBalance(userId, amount);
     }
 
+    /**
+     * @notice Retrieves the total amount of platform fees collected
+     * @dev Only accessible by the owner
+     * @return Total fees collected in stablecoin units
+     */
     function getAmountCollectedInFees()
         external
         view
@@ -537,8 +798,14 @@ contract Orchestrator is Ownable {
         return amountCollectedInFees;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Getter Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Query Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Calculates the total price including platform fees
+     * @param netPrice The net price before fees
+     * @return totalPrice The total price including fees
+     * @return fee The calculated fee amount
+     */
     function getPriceWithFee(
         uint256 netPrice
     ) public view returns (uint256 totalPrice, uint256 fee) {
@@ -547,22 +814,42 @@ contract Orchestrator is Ownable {
         return (netPrice + fee, fee);
     }
 
+    /**
+     * @notice Gets the address of the AlbumDB contract
+     * @return Address of the AlbumDB contract
+     */
     function getAlbumDBAddress() external view returns (address) {
         return dbAddress.album;
     }
 
+    /**
+     * @notice Gets the address of the ArtistDB contract
+     * @return Address of the ArtistDB contract
+     */
     function getArtistDBAddress() external view returns (address) {
         return dbAddress.artist;
     }
 
+    /**
+     * @notice Gets the address of the SongDB contract
+     * @return Address of the SongDB contract
+     */
     function getSongDBAddress() external view returns (address) {
         return dbAddress.song;
     }
 
+    /**
+     * @notice Gets the address of the UserDB contract
+     * @return Address of the UserDB contract
+     */
     function getUserDBAddress() external view returns (address) {
         return dbAddress.user;
     }
 
+    /**
+     * @notice Gets all database contract addresses
+     * @return DataBaseList struct containing all four database addresses
+     */
     function getDbAddresses()
         external
         view
@@ -573,6 +860,15 @@ contract Orchestrator is Ownable {
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Internal Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
+    /**
+     * @notice Internal function that processes payments for song/album purchases
+     * @dev Handles deduction from user balance, payment to artist, fee collection, and extra amounts (tips).
+     *      Reverts if user has insufficient balance for the total amount (price + fee + extra).
+     * @param userId The user ID making the purchase
+     * @param artistId The artist ID receiving payment
+     * @param netPrice The net price (before platform fees)
+     * @param extraAmount Optional tip amount going directly to the artist (no fees applied)
+     */
     function _executePayment(
         uint256 userId,
         uint256 artistId,
