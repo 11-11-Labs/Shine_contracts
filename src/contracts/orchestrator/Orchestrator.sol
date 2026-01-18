@@ -30,22 +30,22 @@ import {IUserDB} from "@shine/interface/IUserDB.sol";
 
 contract Orchestrator is Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    
+
     /// @notice Address of the next Orchestrator contract in case of migration
     address private newOrchestratorAddress;
-    
+
     /// @notice Total amount of platform fees collected from transactions
     uint256 private amountCollectedInFees;
-    
+
     /// @notice Current and proposed stablecoin addresses with timelock for upgrades
     StructsLib.AddressProposal private stablecoin;
-    
+
     /// @notice Addresses of all database contracts (Album, Artist, Song, User)
     StructsLib.DataBaseList private dbAddress;
-    
+
     /// @notice Operational breaker flags for initialization and state control
     StructsLib.Breakers private breaker;
-    
+
     /// @notice Platform fee percentage in basis points (100 = 1%, 10000 = 100%)
     uint16 private percentageFee;
 
@@ -56,7 +56,7 @@ contract Orchestrator is Ownable {
     IUserDB private userDB;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    
+
     /**
      * @notice Validates that the sender is the owner of the specified user ID
      * @param userId The user ID to validate against the sender
@@ -115,16 +115,22 @@ contract Orchestrator is Ownable {
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Constructor 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    
+
     /**
      * @notice Initializes the Orchestrator contract with owner and stablecoin address
      * @dev Sets the initial owner and stablecoin token used for all platform transactions
      * @param initialOwner Address that will have owner privileges for administrative functions
      * @param _stablecoinAddress Address of the stablecoin ERC20 token used for payments
+     * @param _percentageFee Platform fee percentage in basis points (100 = 1%, 10000 = 100%)
      */
-    constructor(address initialOwner, address _stablecoinAddress) {
+    constructor(
+        address initialOwner,
+        address _stablecoinAddress,
+        uint16 _percentageFee
+    ) {
         _initializeOwner(initialOwner);
         stablecoin.current = _stablecoinAddress;
+        percentageFee = _percentageFee;
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 User/Artist Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
