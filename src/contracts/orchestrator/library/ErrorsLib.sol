@@ -30,21 +30,7 @@ library ErrorsLib {
     /// @dev Thrown when caller is not the owner of the specified user ID
     error AddressIsNotOwnerOfUserId();
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Validation Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    
-    /// @dev Thrown when a title parameter is empty or zero-length
-    error TitleCannotBeEmpty();
-    
-    /// @dev Thrown when a special edition name is empty or zero-length
-    error SpecialEditionNameCannotBeEmpty();
-    
-    /// @dev Thrown when a proposed value is not greater than the current value
-    error MustBeGreaterThanCurrent();
-    
-    /// @dev Thrown when max supply for a special edition is zero or invalid
-    error MaxSupplyMustBeGreaterThanZero();
-
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Existence Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Content Existence Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     
     /// @dev Thrown when referencing an artist ID that does not exist
     error ArtistIdDoesNotExist(uint256 artistId);
@@ -55,13 +41,38 @@ library ErrorsLib {
     /// @dev Thrown when referencing a user ID that does not exist
     error UserIdDoesNotExist();
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Content Registration Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when a title parameter is empty or zero-length
+    error TitleCannotBeEmpty();
+    
+    /// @dev Thrown when a special edition name is empty or zero-length
+    error SpecialEditionNameCannotBeEmpty();
+    
+    /// @dev Thrown when max supply for a special edition is zero or invalid
+    error MaxSupplyMustBeGreaterThanZero();
+    
+    /// @dev Thrown when attempting to create an album with songs from different principal artists
+    error ListCannotContainSongsFromDifferentPrincipalArtist();
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Content Update Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    
+    /// @dev Thrown when a proposed value is not greater than the current value
+    error MustBeGreaterThanCurrent();
+
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Balance & Fund Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     
     /// @dev Thrown when an account has insufficient balance for the requested operation
     error InsufficientBalance();
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Content Validation Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Administrative Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     
-    /// @dev Thrown when attempting to create an album with songs from different principal artists
-    error ListCannotContainSongsFromDifferentPrincipalArtist();
+    /// @dev Thrown when the percentage fee provided exceeds the maximum allowed (10000 basis points = 100%)
+    error InvalidPercentageFee();
+    
+    /// @dev Thrown when attempting to set a contract address to the zero address
+    error ProposedAddressCannotBeZero();
+    
+    /// @dev Thrown when attempting to execute a timelocked operation before the timelock expires
+    error TimelockNotExpired();
 }

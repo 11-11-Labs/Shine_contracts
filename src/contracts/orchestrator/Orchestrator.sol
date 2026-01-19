@@ -117,8 +117,8 @@ contract Orchestrator is Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Constructor 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     /**
-     * @notice Initializes the Orchestrator contract with owner and stablecoin address
-     * @dev Sets the initial owner and stablecoin token used for all platform transactions
+     * @notice Initializes the Orchestrator contract with owner, stablecoin, and fee settings
+     * @dev Sets the initial owner, stablecoin token, and platform fee percentage used for all platform transactions
      * @param initialOwner Address that will have owner privileges for administrative functions
      * @param _stablecoinAddress Address of the stablecoin ERC20 token used for payments
      * @param _percentageFee Platform fee percentage in basis points (100 = 1%, 10000 = 100%)
@@ -663,26 +663,29 @@ contract Orchestrator is Ownable {
     }
 
     /**
-     * @notice Sets the platform fee percentage
+     * @notice Change the platform fee percentage
      * @dev Fees are specified in basis points (100 = 1%, 10000 = 100%)
      *      Fee is applied to all song and album purchases, but not to donations.
      * @param _percentageFee Fee percentage in basis points (max 10000)
      */
-    function addPercentageFee(uint16 _percentageFee) external onlyOwner {
+    function changePercentageFee(uint16 _percentageFee) external onlyOwner {
         /// @dev percentage fee is in basis points (100 = 1%)
-        if (_percentageFee > 10000) revert(); // max 100%
+        if (_percentageFee > 10000) revert ErrorsLib.InvalidPercentageFee(); // max 100%
         percentageFee = _percentageFee;
     }
 
     /**
      * @notice Proposes a new stablecoin address with a 1-day timelock
-     * @dev Requires executeStablecoinAddressChange() to be called after the timelock expires
+     * @dev Requires executeStablecoinAddressChange() to be called after the timelock expires.
+     *      Reverts if the proposed address is the zero address.
      * @param newStablecoinAddress The new stablecoin ERC20 token address
      */
     function proposeStablecoinAddressChange(
         address newStablecoinAddress
     ) external onlyOwner {
-        if (newStablecoinAddress == address(0)) revert();
+        if (newStablecoinAddress == address(0))
+            revert ErrorsLib.ProposedAddressCannotBeZero();
+
         stablecoin.proposed = newStablecoinAddress;
         stablecoin.timeToExecute = block.timestamp + 1 days;
     }
@@ -698,16 +701,18 @@ contract Orchestrator is Ownable {
 
     /**
      * @notice Executes a previously proposed stablecoin address change
-     * @dev Can only be called after the 1-day timelock has expired
+     * @dev Can only be called after the 1-day timelock has expired.
+     *      Reverts if no proposal exists or if the timelock has not yet expired.
      */
     function executeStablecoinAddressChange() external onlyOwner {
-        if (
-            stablecoin.proposed == address(0) ||
-            block.timestamp < stablecoin.timeToExecute
-        ) revert();
-        stablecoin.current = stablecoin.proposed;
-        stablecoin.proposed = address(0);
-        stablecoin.timeToExecute = 0;
+        if (block.timestamp < stablecoin.timeToExecute)
+            revert ErrorsLib.TimelockNotExpired();
+
+        stablecoin = StructsLib.AddressProposal({
+            current: stablecoin.proposed,
+            proposed: address(0),
+            timeToExecute: 0
+        });
     }
 
     /**
@@ -721,7 +726,8 @@ contract Orchestrator is Ownable {
         address orchestratorAddressToMigrate,
         address accountToTransferCollectedFees
     ) external onlyOwner {
-        if (orchestratorAddressToMigrate == address(0)) revert();
+        if (orchestratorAddressToMigrate == address(0))
+            revert ErrorsLib.ProposedAddressCannotBeZero();
 
         albumDB.transferOwnership(orchestratorAddressToMigrate);
         artistDB.transferOwnership(orchestratorAddressToMigrate);
@@ -753,7 +759,8 @@ contract Orchestrator is Ownable {
         address to,
         uint256 amount
     ) external onlyOwner {
-        if (amountCollectedInFees < amount) revert();
+        if (amountCollectedInFees < amount)
+            revert ErrorsLib.InsufficientBalance();
         amountCollectedInFees -= amount;
         IERC20(stablecoin.current).transfer(to, amount);
     }
@@ -768,7 +775,8 @@ contract Orchestrator is Ownable {
         uint256 artistId,
         uint256 amount
     ) external onlyOwner artistIdExists(artistId) {
-        if (amountCollectedInFees < amount) revert();
+        if (amountCollectedInFees < amount)
+            revert ErrorsLib.InsufficientBalance();
 
         amountCollectedInFees -= amount;
         artistDB.addBalance(artistId, amount);
@@ -784,7 +792,8 @@ contract Orchestrator is Ownable {
         uint256 userId,
         uint256 amount
     ) external onlyOwner userIdExists(userId) {
-        if (amountCollectedInFees < amount) revert();
+        if (amountCollectedInFees < amount)
+            revert ErrorsLib.InsufficientBalance();
 
         amountCollectedInFees -= amount;
         userDB.addBalance(userId, amount);
@@ -824,7 +833,7 @@ contract Orchestrator is Ownable {
      * @notice Gets the current platform fee percentage
      * @return The fee percentage in basis points (100 = 1%, 10000 = 100%)
      */
-    function getFeePercentage() external view returns (uint16) {
+    function getPercentageFee() external view returns (uint16) {
         return percentageFee;
     }
 
@@ -834,6 +843,18 @@ contract Orchestrator is Ownable {
      */
     function getStablecoinAddress() external view returns (address) {
         return stablecoin.current;
+    }
+
+    /**
+     * @notice Gets detailed stablecoin information including proposed changes
+     * @return AddressProposal struct containing current, proposed, and timelock info
+     */
+    function getStablecoinInfo()
+        external
+        view
+        returns (StructsLib.AddressProposal memory)
+    {
+        return stablecoin;
     }
 
     /**
