@@ -901,6 +901,18 @@ contract Orchestrator is Ownable {
         return dbAddress;
     }
 
+    /**
+     * @notice Gets the address of the new orchestrator after migration
+     * @return Address of the new Orchestrator contract
+     */
+    function getNewOrchestratorAddress()
+        external
+        view
+        returns (address)
+    {
+        return newOrchestratorAddress;
+    }
+
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Internal Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     /**
