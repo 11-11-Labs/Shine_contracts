@@ -5,7 +5,7 @@
 ![Foundry](https://img.shields.io/badge/Framework-Foundry-orange)
 ![Version](https://img.shields.io/badge/Version-0.0.1%20"Koromaru"-brightgreen)
 
-> The blockchain backbone powering **Shine** — a decentralized music marketplace that empowers artists and listeners through direct connections, fair compensation, and transparency. These smart contracts serve as an immutable source of truth for the entire ecosystem, ensuring permanent records, true ownership, and data resilience. Even if the Shine platform disappears, users can always recover their music purchases, artist histories, royalties, and transaction records from the blockchain.
+> The blockchain backbone powering **Shine** a decentralized music marketplace that empowers artists and listeners through direct connections, fair compensation, and transparency. These smart contracts serve as an immutable source of truth for the entire ecosystem, ensuring permanent records, true ownership, and data resilience. Even if the Shine platform disappears, users can always recover their music purchases, artist histories, royalties, and transaction records from the blockchain.
 
 ## Overview
 
