@@ -261,8 +261,8 @@ contract Orchestrator is Ownable {
         uint256 toArtistId,
         uint256 amount
     ) external senderIsUserId(userId) artistIdExists(toArtistId) {
-        uint256 userBalance = userDB.getBalance(userId);
-        if (userBalance < amount) revert ErrorsLib.InsufficientBalance();
+        if (userDB.getBalance(userId) < amount)
+            revert ErrorsLib.InsufficientBalance();
 
         userDB.deductBalance(userId, amount);
         artistDB.addBalance(toArtistId, amount);
@@ -905,11 +905,7 @@ contract Orchestrator is Ownable {
      * @notice Gets the address of the new orchestrator after migration
      * @return Address of the new Orchestrator contract
      */
-    function getNewOrchestratorAddress()
-        external
-        view
-        returns (address)
-    {
+    function getNewOrchestratorAddress() external view returns (address) {
         return newOrchestratorAddress;
     }
 
