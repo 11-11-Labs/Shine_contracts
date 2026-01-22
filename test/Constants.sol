@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Test, console} from "forge-std/Test.sol";
+import "forge-std/Test.sol";
 import {ERC20} from "@solady/tokens/ERC20.sol";
 import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
 import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";

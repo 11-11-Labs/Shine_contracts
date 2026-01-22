@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
-import {Constants} from "testing/Constants.sol";
+import "forge-std/Test.sol";
+import "testing/Constants.sol";
+
 import {UserDB} from "@shine/contracts/database/UserDB.sol";
 
 contract UserDB_test_fuzz is Constants {
