@@ -5,7 +5,7 @@
 ![Foundry](https://img.shields.io/badge/Framework-Foundry-orange)
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
 
-> **Shine** is a decentralized music marketplace that combines the best of modern music platforms like Bandcamp with the power of blockchain technology. Our smart contracts serve as an immutable source of truth for the entire ecosystem, ensuring that even if the platform disappears, users can always recover their music purchases, artist histories, and transaction records.
+> **Shine** is a decentralized music marketplace that empowers artists and listeners through direct connections, fair compensation, and transparency all powered by decentralized technology. Our contracts serve as an immutable source of truth for the entire ecosystem, ensuring that even if the platform disappears, users can always recover their music purchases, artist histories, royalties, and transaction records. True ownership. Permanent records. Community-owned music economy.
 
 ## Overview
 
