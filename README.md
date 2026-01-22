@@ -1,15 +1,15 @@
-# Shine Music Platform - Smart Contracts
+# Shine Smart Contracts
 
 ![Solidity](https://img.shields.io/badge/Solidity-^0.8.20-blue)
 ![License](https://img.shields.io/badge/License-SHINE--PPL--1.0-red)
 ![Foundry](https://img.shields.io/badge/Framework-Foundry-orange)
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
 
-> **Shine** is a decentralized music marketplace that empowers artists and listeners through direct connections, fair compensation, and transparency all powered by decentralized technology. Our contracts serve as an immutable source of truth for the entire ecosystem, ensuring that even if the platform disappears, users can always recover their music purchases, artist histories, royalties, and transaction records. True ownership. Permanent records. Community-owned music economy.
+> The blockchain backbone powering **Shine** — a decentralized music marketplace that empowers artists and listeners through direct connections, fair compensation, and transparency. These smart contracts serve as an immutable source of truth for the entire ecosystem, ensuring permanent records, true ownership, and data resilience. Even if the Shine platform disappears, users can always recover their music purchases, artist histories, royalties, and transaction records from the blockchain.
 
 ## Overview
 
-Shine Smart Contracts provide a robust, decentralized foundation for a music platform featuring:
+These smart contracts provide the decentralized foundation for the Shine music platform, featuring:
 
 - **Permanent Records**: Immutable on-chain database of songs, albums, artists, and users
 - **True Ownership**: Users genuinely own their digital music purchases
