@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 import {Constants} from "testing/Constants.sol";
 
-contract Orchestrator_test_unit_correct_Funds is Constants {
+contract Orchestrator_test_fuzz_Funds is Constants {
     uint256 USER_ID;
     uint256 ARTIST_1_ID;
     uint256 WILDCARD_USER_ID;
@@ -29,7 +29,7 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         );
     }
 
-    function test_unit_correct_depositFunds() public {
+    function test_fuzz_depositFunds() public {
         uint256 depositAmount = 10_000_000; // 10 USDC with 6 decimals
 
         _giveUsdc(USER.Address, depositAmount);
@@ -44,7 +44,7 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         assertEq(userBalance, depositAmount, "User balance should match the deposited amount");
     }
 
-    function test_unit_correct_depositFundsToAnotherUser() public {
+    function test_fuzz_depositFundsToAnotherUser() public {
         uint256 depositAmount = 5_000_000; // 5 USDC with 6 decimals
 
         _giveUsdc(WILDCARD_ACCOUNT.Address, depositAmount);
@@ -62,7 +62,7 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         );
     }
 
-    function test_unit_correct_makeDonation() public {
+    function test_fuzz_makeDonation() public {
         uint256 donationAmount = 2_000_000; // 2 USDC with 6 decimals
 
         _execute_orchestrator_depositFunds(USER_ID, USER.Address, donationAmount);
@@ -79,7 +79,7 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         );
     }
 
-    function test_unit_correct_withdrawFunds_user() public {
+    function test_fuzz_withdrawFunds_user() public {
         _execute_orchestrator_depositFunds(USER_ID, USER.Address,  20_000_000); // 20 USDC
 
         uint256 withdrawAmount = 15_000_000; // 15 USDC with 6 decimals
@@ -102,7 +102,7 @@ contract Orchestrator_test_unit_correct_Funds is Constants {
         );
     }
 
-    function test_unit_correct_withdrawFunds_artist() public {
+    function test_fuzz_withdrawFunds_artist() public {
 
         ///@dev First, make a donation to the artist to have a balance to withdraw
 

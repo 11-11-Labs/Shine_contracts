@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Constants} from "../../../Constants.sol";
+import {Constants} from "testing/Constants.sol";
 import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
 import {Ownable} from "@solady/auth/Ownable.sol";
 
