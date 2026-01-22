@@ -67,6 +67,14 @@ contract AlbumDB is IdUtils, Ownable {
         bool IsBanned;
     }
 
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Enums 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+
+    enum ChangeType {
+        MetadataUpdated,
+        PurchaseabilityChanged,
+        PriceChanged
+    }
+
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /// @notice Tracks whether a user owns a specific album
     /// @dev Mapping: albumId => userId => status
@@ -79,6 +87,38 @@ contract AlbumDB is IdUtils, Ownable {
     /// @notice Stores all album metadata indexed by album ID
     /// @dev Private mapping to prevent direct external access
     mapping(uint256 Id => Metadata) private albums;
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Events 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+
+    event Registered(uint256 indexed albumId);
+
+    event Purchased(
+        uint256 indexed albumId,
+        uint256 indexed userId,
+        uint256 indexed timestamp
+    );
+
+    event Gifted(
+        uint256 indexed albumId,
+        uint256 indexed userId,
+        uint256 indexed timestamp
+    );
+
+    event Refunded(
+        uint256 indexed albumId,
+        uint256 indexed userId,
+        uint256 indexed timestamp
+    );
+
+    event Changed(
+        uint256 indexed albumId,
+        uint256 indexed timestamp,
+        ChangeType indexed changeType
+    );
+
+    event Banned(uint256 indexed albumId);
+    
+    event Unbanned(uint256 indexed albumId);
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -155,6 +195,8 @@ contract AlbumDB is IdUtils, Ownable {
             IsBanned: false
         });
 
+        emit Registered(idAssigned);
+
         return idAssigned;
     }
 
@@ -192,6 +234,8 @@ contract AlbumDB is IdUtils, Ownable {
         ownByUserId[id][userId] = 0x01;
         albums[id].TimesBought++;
 
+        emit Purchased(id, userId, block.timestamp);
+
         return albums[id].MusicIds;
     }
 
@@ -224,6 +268,9 @@ contract AlbumDB is IdUtils, Ownable {
         }
         ownByUserId[id][userId] = 0x02;
         albums[id].TimesBought++;
+
+        emit Gifted(id, userId, block.timestamp);
+
         return albums[id].MusicIds;
     }
 
@@ -243,6 +290,8 @@ contract AlbumDB is IdUtils, Ownable {
 
         ownByUserId[id][userId] = 0x00;
         albums[id].TimesBought--;
+
+        emit Refunded(id, userId, block.timestamp);
 
         return (albums[id].MusicIds, albums[id].Price);
     }
@@ -290,6 +339,8 @@ contract AlbumDB is IdUtils, Ownable {
             MaxSupplySpecialEdition: maxSupplySpecialEdition,
             IsBanned: albums[id].IsBanned
         });
+
+        emit Changed(id, block.timestamp, ChangeType.MetadataUpdated);
     }
 
     /**
@@ -303,6 +354,8 @@ contract AlbumDB is IdUtils, Ownable {
         bool canBePurchased
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         albums[id].CanBePurchased = canBePurchased;
+
+        emit Changed(id, block.timestamp, ChangeType.PurchaseabilityChanged);
     }
 
     /**
@@ -317,6 +370,8 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 price
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         albums[id].Price = price;
+
+        emit Changed(id, block.timestamp, ChangeType.PriceChanged);
     }
 
     /**
@@ -330,6 +385,9 @@ contract AlbumDB is IdUtils, Ownable {
         bool isBanned
     ) external onlyOwner onlyIfExist(id) {
         albums[id].IsBanned = isBanned;
+
+        if (isBanned) emit Banned(id);
+        else emit Unbanned(id);
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋

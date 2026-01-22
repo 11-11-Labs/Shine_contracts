@@ -32,7 +32,7 @@ contract SongDB is IdUtils, Ownable {
     /// @dev Thrown when trying to refund a song the user does not own
     error UserDoesNotOwnSong();
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Type Declarations 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Stores all metadata associated with a song
      * @dev Used to track song information, artists, pricing, and purchase status
@@ -59,18 +59,99 @@ contract SongDB is IdUtils, Ownable {
         bool IsBanned;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /// @notice Tracks whether a user owns a specific song
-    /// @dev Mapping: songId => userId => status
-    ///      - 0x00 = not owned
-    ///      - 0x01 = bought (owned)
-    ///      - 0x02 = gifted (owned)
+    /**
+     * @notice Enum representing types of metadata changes for a song
+     * @dev Used in events to indicate what type of data was modified
+     */
+    enum ChangeType {
+        MetadataUpdated,
+        PurchaseabilityChanged,
+        PriceChanged
+    }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Tracks whether a user owns a specific song
+     * @dev Mapping: songId => userId => status
+     *      - 0x00 = not owned
+     *      - 0x01 = bought (owned)
+     *      - 0x02 = gifted (owned)
+     */
     mapping(uint256 Id => mapping(uint256 userId => bytes1))
         private ownByUserId;
 
-    /// @notice Stores all song metadata indexed by song ID
-    /// @dev Private mapping to prevent direct external access
+    /**
+     * @notice Stores all song metadata indexed by song ID
+     * @dev Private mapping to prevent direct external access
+     */
     mapping(uint256 Id => Metadata) private songs;
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Events 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Emitted when a new song is registered in the database
+     * @param songId The unique identifier assigned to the song
+     */
+    event Registered(uint256 indexed songId);
+
+    /**
+     * @notice Emitted when a song is purchased by a user
+     * @param songId The unique identifier of the purchased song
+     * @param userId The unique identifier of the purchasing user
+     * @param timestamp The block timestamp when the purchase occurred
+     */
+    event Purchased(
+        uint256 indexed songId,
+        uint256 indexed userId,
+        uint256 indexed timestamp
+    );
+
+    /**
+     * @notice Emitted when a song is gifted to a user
+     * @param songId The unique identifier of the gifted song
+     * @param userId The unique identifier of the recipient user
+     * @param timestamp The block timestamp when the gift occurred
+     */
+    event Gifted(
+        uint256 indexed songId,
+        uint256 indexed userId,
+        uint256 indexed timestamp
+    );
+
+    /**
+     * @notice Emitted when a song purchase is refunded
+     * @param songId The unique identifier of the refunded song
+     * @param userId The unique identifier of the user receiving refund
+     * @param timestamp The block timestamp when the refund occurred
+     */
+    event Refunded(
+        uint256 indexed songId,
+        uint256 indexed userId,
+        uint256 indexed timestamp
+    );
+
+    /**
+     * @notice Emitted when song metadata, purchasability, or price is changed
+     * @param songId The unique identifier of the modified song
+     * @param timestamp The block timestamp when the change occurred
+     * @param changeType The type of change that was made
+     */
+    event Changed(
+        uint256 indexed songId,
+        uint256 indexed timestamp,
+        ChangeType indexed changeType
+    );
+
+    /**
+     * @notice Emitted when a song is banned from the platform
+     * @param songId The unique identifier of the banned song
+     */
+    event Banned(uint256 indexed songId);
+
+    /**
+     * @notice Emitted when a song ban is lifted
+     * @param songId The unique identifier of the unbanned song
+     */
+    event Unbanned(uint256 indexed songId);
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -104,7 +185,7 @@ contract SongDB is IdUtils, Ownable {
         _initializeOwner(_orchestratorAddress);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 External Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Registers a new song in the database
      * @dev Only callable by the Orchestrator (owner). Assigns a unique ID automatically.
@@ -141,10 +222,11 @@ contract SongDB is IdUtils, Ownable {
             IsBanned: false
         });
 
+        emit Registered(idAssigned);
+
         return idAssigned;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Purchases 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a song purchase for a user
      * @dev Only callable by owner. Reverts if user already owns it or song is not
@@ -161,9 +243,10 @@ contract SongDB is IdUtils, Ownable {
 
         ownByUserId[id][userId] = 0x01;
         songs[id].TimesBought++;
+
+        emit Purchased(id, userId, block.timestamp);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Gifts 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Gifts a song to a user without payment
      * @dev Only callable by owner. Reverts if user already owns it or song is banned.
@@ -178,9 +261,10 @@ contract SongDB is IdUtils, Ownable {
 
         ownByUserId[id][toUserId] = 0x02;
         songs[id].TimesBought++;
+
+        emit Gifted(id, toUserId, block.timestamp);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Refunds 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Processes a refund for a previously purchased/gifted song
      * @dev Only callable by owner. Reverts if user hasn't owned the song.
@@ -195,9 +279,10 @@ contract SongDB is IdUtils, Ownable {
 
         ownByUserId[id][userId] = 0x00;
         songs[id].TimesBought--;
+
+        emit Refunded(id, userId, block.timestamp);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Metadata Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Updates all metadata fields for an existing song
      * @dev Only callable by owner. Preserves TimesBought and IsBanned status.
@@ -231,6 +316,8 @@ contract SongDB is IdUtils, Ownable {
             TimesBought: songs[id].TimesBought,
             IsBanned: songs[id].IsBanned
         });
+
+        emit Changed(id, block.timestamp, ChangeType.MetadataUpdated);
     }
 
     /**
@@ -244,6 +331,8 @@ contract SongDB is IdUtils, Ownable {
         bool canBePurchased
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         songs[id].CanBePurchased = canBePurchased;
+
+        emit Changed(id, block.timestamp, ChangeType.PurchaseabilityChanged);
     }
 
     /**
@@ -258,6 +347,8 @@ contract SongDB is IdUtils, Ownable {
         uint256 price
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         songs[id].Price = price;
+
+        emit Changed(id, block.timestamp, ChangeType.PriceChanged);
     }
 
     /**
@@ -271,9 +362,12 @@ contract SongDB is IdUtils, Ownable {
         bool isBanned
     ) external onlyOwner onlyIfExist(id) {
         songs[id].IsBanned = isBanned;
+
+        if (isBanned) emit Banned(id);
+        else emit Unbanned(id);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Getter Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Checks if a user owns a specific song
      * @param id The song ID to check

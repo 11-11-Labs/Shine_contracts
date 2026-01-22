@@ -28,7 +28,7 @@ contract ArtistDB is IdUtils, Ownable {
     /// @dev Thrown when attempting to access an artist that does not exist
     error ArtistDoesNotExist();
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Type Declarations 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Stores all metadata associated with an artist
      * @dev Used to track artist information, balance, royalties, and ban status
@@ -48,14 +48,87 @@ contract ArtistDB is IdUtils, Ownable {
         bool IsBanned;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /// @notice Maps artist wallet addresses to their unique IDs
-    /// @dev Provides quick lookup of artist ID by their Ethereum address
+    /**
+     * @notice Enum representing types of metadata changes for an artist
+     * @dev Used in events to indicate what type of data was modified
+     */
+    enum ChangeType {
+        MetadataUpdated,
+        AddressUpdated
+    }
+
+    /**
+     * @notice Enum representing types of balance changes for an artist
+     * @dev Used in events to indicate whether balance was added or deducted
+     */
+    enum BalanceChangeType {
+        Added,
+        Deducted
+    }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Maps artist wallet addresses to their unique IDs
+     * @dev Provides quick lookup of artist ID by their Ethereum address
+     */
     mapping(address artistAddress => uint256 id) private addressArtist;
 
-    /// @notice Stores all artist metadata indexed by artist ID
-    /// @dev Private mapping to prevent direct external access
+    /**
+     * @notice Stores all artist metadata indexed by artist ID
+     * @dev Private mapping to prevent direct external access
+     */
     mapping(uint256 id => Metadata) private artists;
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Events 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Emitted when a new artist is registered in the database
+     * @param artistId The unique identifier assigned to the artist
+     * @param artistAddress The wallet address of the registered artist
+     */
+    event Registered(uint256 indexed artistId, address indexed artistAddress);
+
+    /**
+     * @notice Emitted when artist metadata or address is updated
+     * @param artistId The unique identifier of the modified artist
+     * @param changeType The type of change that occurred
+     */
+    event Changed(uint256 indexed artistId, ChangeType indexed changeType);
+
+    /**
+     * @notice Emitted when an artist's balance is modified
+     * @param artistId The unique identifier of the artist
+     * @param amountChanged The amount that was added or deducted
+     * @param changeType Whether balance was added or deducted
+     */
+    event BalanceChanged(
+        uint256 indexed artistId,
+        uint256 indexed amountChanged,
+        BalanceChangeType indexed changeType
+    );
+
+    /**
+     * @notice Emitted when an artist's accumulated royalties are modified
+     * @param artistId The unique identifier of the artist
+     * @param amountChanged The amount of royalties added or deducted
+     * @param changeType Whether royalties were added or deducted
+     */
+    event AccumulatedRoyaltiesChanged(
+        uint256 indexed artistId,
+        uint256 indexed amountChanged,
+        BalanceChangeType indexed changeType
+    );
+
+    /**
+     * @notice Emitted when an artist is banned from the platform
+     * @param artistId The unique identifier of the banned artist
+     */
+    event Banned(uint256 indexed artistId);
+
+    /**
+     * @notice Emitted when an artist ban is lifted
+     * @param artistId The unique identifier of the unbanned artist
+     */
+    event Unbanned(uint256 indexed artistId);
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -88,7 +161,7 @@ contract ArtistDB is IdUtils, Ownable {
         _initializeOwner(_orchestratorAddress);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 External Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Registers a new artist in the database
      * @dev Only callable by the Orchestrator (owner). Assigns a unique ID automatically.
@@ -116,7 +189,6 @@ contract ArtistDB is IdUtils, Ownable {
         return idAssigned;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Admin Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Updates basic artist information (name and metadata)
      * @dev Only callable by owner. Cannot modify banned artists. Name cannot be empty.
@@ -133,6 +205,8 @@ contract ArtistDB is IdUtils, Ownable {
 
         artists[id].Name = name;
         artists[id].MetadataURI = metadataURI;
+
+        emit Changed(id, ChangeType.MetadataUpdated);
     }
 
     /**
@@ -148,6 +222,8 @@ contract ArtistDB is IdUtils, Ownable {
         addressArtist[artists[id].Address] = 0;
         artists[id].Address = newArtistAddress;
         addressArtist[newArtistAddress] = id;
+
+        emit Changed(id, ChangeType.AddressUpdated);
     }
 
     /**
@@ -161,6 +237,8 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 amount
     ) external onlyOwner onlyIfExist(artistId) onlyIfNotBanned(artistId) {
         artists[artistId].Balance += amount;
+
+        emit BalanceChanged(artistId, amount, BalanceChangeType.Added);
     }
 
     /**
@@ -174,6 +252,8 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 amount
     ) external onlyOwner onlyIfExist(artistId) {
         artists[artistId].Balance -= amount;
+
+        emit BalanceChanged(artistId, amount, BalanceChangeType.Deducted);
     }
 
     /**
@@ -187,6 +267,12 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 amount
     ) external onlyOwner onlyIfExist(artistId) onlyIfNotBanned(artistId) {
         artists[artistId].AccumulatedRoyalties += amount;
+
+        emit AccumulatedRoyaltiesChanged(
+            artistId,
+            amount,
+            BalanceChangeType.Added
+        );
     }
 
     /**
@@ -200,6 +286,12 @@ contract ArtistDB is IdUtils, Ownable {
         uint256 amount
     ) external onlyOwner onlyIfExist(artistId) {
         artists[artistId].AccumulatedRoyalties -= amount;
+
+        emit AccumulatedRoyaltiesChanged(
+            artistId,
+            amount,
+            BalanceChangeType.Deducted
+        );
     }
 
     /**
@@ -213,9 +305,12 @@ contract ArtistDB is IdUtils, Ownable {
         bool action
     ) external onlyOwner onlyIfExist(artistId) {
         artists[artistId].IsBanned = action;
+
+        if (action) emit Banned(artistId);
+        else emit Unbanned(artistId);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Getter Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Retrieves all metadata for an artist
      * @param id The artist ID to query
@@ -261,19 +356,6 @@ contract ArtistDB is IdUtils, Ownable {
         return artists[id].IsBanned;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**********************************
 🮋🮋 Made with ❤️ by 11:11 Labs 🮋🮋

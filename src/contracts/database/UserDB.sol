@@ -28,7 +28,7 @@ contract UserDB is IdUtils, Ownable {
     /// @dev Thrown when trying to set a username to empty string
     error UsernameIsEmpty();
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Structs 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Type Declarations 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Stores all metadata associated with a user
      * @dev Used to track user profile information, purchase history, and account status
@@ -48,14 +48,109 @@ contract UserDB is IdUtils, Ownable {
         bool IsBanned;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Mappings 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /// @notice Maps user wallet addresses to their unique IDs
-    /// @dev Provides quick lookup of user ID by their Ethereum address
+    /**
+     * @notice Enum representing types of metadata changes for a user
+     * @dev Used in events to indicate what type of data was modified
+     */
+    enum ChangeType {
+        MetadataUpdated,
+        AddressUpdated
+    }
+
+    /**
+     * @notice Enum representing types of balance changes for a user
+     * @dev Used in events to indicate whether balance was added or deducted
+     */
+    enum BalanceChangeType {
+        Added,
+        Deducted
+    }
+
+    /**
+     * @notice Enum representing types of song list changes for a user
+     * @dev Used in events to indicate whether songs were added or removed
+     */
+    enum SongListChangeType {
+        Added,
+        Removed
+    }
+
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Maps user wallet addresses to their unique IDs
+     * @dev Provides quick lookup of user ID by their Ethereum address
+     */
     mapping(address userAddress => uint256 id) private addressUser;
 
-    /// @notice Stores all user metadata indexed by user ID
-    /// @dev Private mapping to prevent direct external access
+    /**
+     * @notice Stores all user metadata indexed by user ID
+     * @dev Private mapping to prevent direct external access
+     */
     mapping(uint256 Id => Metadata) private users;
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Events 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Emitted when a new user is registered in the database
+     * @param userId The unique identifier assigned to the user
+     * @param userAddress The wallet address of the registered user
+     */
+    event Registered(uint256 indexed userId, address indexed userAddress);
+
+    /**
+     * @notice Emitted when user metadata or address is updated
+     * @param userId The unique identifier of the modified user
+     * @param changeType The type of change that occurred
+     */
+    event Changed(uint256 indexed userId, ChangeType indexed changeType);
+
+    /**
+     * @notice Emitted when a single song is added or removed from a user's purchase list
+     * @param userId The unique identifier of the user
+     * @param songId The unique identifier of the song
+     * @param changeType Whether the song was added or removed
+     */
+    event SongListChangedSingle(
+        uint256 indexed userId,
+        uint256 indexed songId,
+        SongListChangeType indexed changeType
+    );
+
+    /**
+     * @notice Emitted when multiple songs are added or removed from a user's purchase list
+     * @param userId The unique identifier of the user
+     * @param songIds Array of song IDs that were modified
+     * @param changeType Whether songs were added or removed
+     */
+    event SongListChangedBatch(
+        uint256 indexed userId,
+        uint256[] songIds,
+        SongListChangeType indexed changeType
+    );
+
+    /**
+     * @notice Emitted when a user's balance is modified
+     * @param userId The unique identifier of the user
+     * @param amountChanged The amount that was added or deducted
+     * @param changeType Whether balance was added or deducted
+     */
+    event BalanceChanged(
+        uint256 indexed userId,
+        uint256 indexed amountChanged,
+        BalanceChangeType indexed changeType
+    );
+
+    /**
+     * @notice Emitted when a user is banned from the platform
+     * @param userId The unique identifier of the banned user
+     */
+    event Banned(uint256 indexed userId);
+
+    /**
+     * @notice Emitted when a user ban is lifted
+     * @param userId The unique identifier of the unbanned user
+     */
+    event Unbanned(uint256 indexed userId);
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -88,7 +183,7 @@ contract UserDB is IdUtils, Ownable {
         _initializeOwner(_orchestratorAddress);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Registration 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 External Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Registers a new user in the database
      * @dev Only callable by the Orchestrator (owner). Assigns a unique ID automatically.
@@ -115,10 +210,11 @@ contract UserDB is IdUtils, Ownable {
 
         addressUser[userAddress] = idAssigned;
 
+        emit Registered(idAssigned, userAddress);
+
         return idAssigned;
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Admin Changes 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Updates basic user information (username and metadata)
      * @dev Only callable by owner. Cannot modify banned users. Username cannot be empty.
@@ -135,6 +231,8 @@ contract UserDB is IdUtils, Ownable {
 
         users[id].Username = username;
         users[id].MetadataURI = metadataURI;
+
+        emit Changed(id, ChangeType.MetadataUpdated);
     }
 
     /**
@@ -150,6 +248,8 @@ contract UserDB is IdUtils, Ownable {
         addressUser[users[id].Address] = 0;
         users[id].Address = newAddress;
         addressUser[newAddress] = id;
+
+        emit Changed(id, ChangeType.AddressUpdated);
     }
 
     /**
@@ -163,6 +263,12 @@ contract UserDB is IdUtils, Ownable {
         uint256 songId
     ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
         users[userId].PurchasedSongIds.push(songId);
+
+        emit SongListChangedSingle(
+            userId,
+            songId,
+            SongListChangeType.Added
+        );
     }
 
     /**
@@ -193,6 +299,12 @@ contract UserDB is IdUtils, Ownable {
                 ++i;
             }
         }
+
+        emit SongListChangedSingle(
+            userId,
+            songId,
+            SongListChangeType.Removed
+        );
     }
 
     /**
@@ -212,6 +324,12 @@ contract UserDB is IdUtils, Ownable {
                 ++i;
             }
         }
+
+        emit SongListChangedBatch(
+            userId,
+            songIds,
+            SongListChangeType.Added
+        );
     }
 
     /**
@@ -263,6 +381,12 @@ contract UserDB is IdUtils, Ownable {
         while (songIds.length > writeIndex) {
             songIds.pop();
         }
+
+        emit SongListChangedBatch(
+            userId,
+            songIdsToDelete,
+            SongListChangeType.Removed
+        );
     }
 
     /**
@@ -276,6 +400,12 @@ contract UserDB is IdUtils, Ownable {
         uint256 amount
     ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
         users[userId].Balance += amount;
+
+        emit BalanceChanged(
+            userId,
+            amount,
+            BalanceChangeType.Added
+        );
     }
 
     /**
@@ -289,6 +419,12 @@ contract UserDB is IdUtils, Ownable {
         uint256 amount
     ) external onlyOwner onlyIfExist(userId) onlyIfNotBanned(userId) {
         users[userId].Balance -= amount;
+
+        emit BalanceChanged(
+            userId,
+            amount,
+            BalanceChangeType.Deducted
+        );
     }
 
     /**
@@ -302,9 +438,12 @@ contract UserDB is IdUtils, Ownable {
         bool isBanned
     ) external onlyOwner onlyIfExist(id) {
         users[id].IsBanned = isBanned;
+
+        if (isBanned) emit Banned(id);
+        else emit Unbanned(id);
     }
 
-    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 View Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Getter Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Retrieves all metadata for a user
      * @param id The user ID to query
