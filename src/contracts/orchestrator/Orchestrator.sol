@@ -367,11 +367,16 @@ contract Orchestrator is Ownable {
         string memory metadataURI,
         bool canBePurchased,
         uint256 price
-    )
-        external
-        senderIsArtistId(songDB.getPrincipalArtistId(id))
-        songIdExists(id)
-    {
+    ) external senderIsArtistId(songDB.getPrincipalArtistId(id)) {
+        if (artistIDs.length > 0) {
+            for (uint256 i = 0; i < artistIDs.length; i++) {
+                if (!artistDB.exists(artistIDs[i]))
+                    revert ErrorsLib.ArtistIdDoesNotExist(artistIDs[i]);
+            }
+        }
+
+        if (bytes(title).length == 0) revert ErrorsLib.TitleCannotBeEmpty();
+
         songDB.change(
             id,
             title,
@@ -393,11 +398,7 @@ contract Orchestrator is Ownable {
     function changeSongPurchaseability(
         uint256 songId,
         bool canBePurchased
-    )
-        external
-        senderIsArtistId(songDB.getPrincipalArtistId(songId))
-        songIdExists(songId)
-    {
+    ) external senderIsArtistId(songDB.getPrincipalArtistId(songId)) {
         songDB.changePurchaseability(songId, canBePurchased);
     }
 
@@ -410,11 +411,7 @@ contract Orchestrator is Ownable {
     function changeSongPrice(
         uint256 songId,
         uint256 price
-    )
-        external
-        senderIsArtistId(songDB.getPrincipalArtistId(songId))
-        songIdExists(songId)
-    {
+    ) external senderIsArtistId(songDB.getPrincipalArtistId(songId)) {
         songDB.changePrice(songId, price);
     }
 
@@ -430,14 +427,17 @@ contract Orchestrator is Ownable {
         songDB.purchase(songId, userID);
         userDB.addSong(userID, songId);
 
-        _executePayment(
-            userID,
-            songDB.getPrincipalArtistId(songId),
-            songDB.getPrice(songId),
-            extraAmount
-        );
+        uint256 netPrice = songDB.getPrice(songId);
+        
+        if (netPrice + extraAmount > 0)
+            _executePayment(
+                userID,
+                songDB.getPrincipalArtistId(songId),
+                netPrice,
+                extraAmount
+            );
 
-        emit EventsLib.SongPurchased(songId, userID, songDB.getPrice(songId));
+        emit EventsLib.SongPurchased(songId, userID, netPrice);
     }
 
     /**
@@ -927,26 +927,17 @@ contract Orchestrator is Ownable {
         uint256 extraAmount
     ) internal {
         uint256 userBalance = userDB.getBalance(userId);
+        (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(netPrice);
 
-        if (netPrice != 0) {
-            (uint256 totalPrice, uint256 calculatedFee) = getPriceWithFee(
-                netPrice
-            );
-            if (userBalance < totalPrice)
-                revert ErrorsLib.InsufficientBalance();
+        uint256 totalToDeduct = totalPrice + extraAmount;
+        if (userBalance < totalToDeduct) revert ErrorsLib.InsufficientBalance();
 
-            userDB.deductBalance(userId, totalPrice);
-            artistDB.addBalance(artistId, netPrice);
-            amountCollectedInFees += calculatedFee;
+        if (totalToDeduct > 0) {
+            userDB.deductBalance(userId, totalToDeduct);
+            artistDB.addBalance(artistId, netPrice + extraAmount);
         }
 
-        if (extraAmount > 0) {
-            if (userBalance < extraAmount)
-                revert ErrorsLib.InsufficientBalance();
-
-            userDB.deductBalance(userId, extraAmount);
-            artistDB.addBalance(artistId, extraAmount);
-        }
+        if (calculatedFee > 0) amountCollectedInFees += calculatedFee;
     }
 }
 
