@@ -8,6 +8,7 @@ contract Orchestrator_test_fuzz_Funds is Constants {
     uint256 USER_ID;
     uint256 ARTIST_1_ID;
     uint256 WILDCARD_USER_ID;
+
     function executeBeforeSetUp() internal override {
         ARTIST_1_ID = _execute_orchestrator_register(
             true,
@@ -29,8 +30,7 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         );
     }
 
-    function test_fuzz_depositFunds() public {
-        uint256 depositAmount = 10_000_000; // 10 USDC with 6 decimals
+    function test_fuzz_depositFunds(uint112 depositAmount) public {
 
         _giveUsdc(USER.Address, depositAmount);
         _approveUsdc(USER.Address, address(orchestrator), depositAmount);
@@ -44,9 +44,7 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         assertEq(userBalance, depositAmount, "User balance should match the deposited amount");
     }
 
-    function test_fuzz_depositFundsToAnotherUser() public {
-        uint256 depositAmount = 5_000_000; // 5 USDC with 6 decimals
-
+    function test_fuzz_depositFundsToAnotherUser(uint112 depositAmount) public {
         _giveUsdc(WILDCARD_ACCOUNT.Address, depositAmount);
         _approveUsdc(WILDCARD_ACCOUNT.Address, address(orchestrator), depositAmount);
 
@@ -62,8 +60,7 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         );
     }
 
-    function test_fuzz_makeDonation() public {
-        uint256 donationAmount = 2_000_000; // 2 USDC with 6 decimals
+    function test_fuzz_makeDonation(uint112 donationAmount) public {
 
         _execute_orchestrator_depositFunds(USER_ID, USER.Address, donationAmount);
 
@@ -79,10 +76,9 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         );
     }
 
-    function test_fuzz_withdrawFunds_user() public {
-        _execute_orchestrator_depositFunds(USER_ID, USER.Address,  20_000_000); // 20 USDC
-
-        uint256 withdrawAmount = 15_000_000; // 15 USDC with 6 decimals
+    function test_fuzz_withdrawFunds_user(uint112 depositAmount, uint112 withdrawAmount) public {
+        vm.assume(withdrawAmount <= depositAmount);
+        _execute_orchestrator_depositFunds(USER_ID, USER.Address, depositAmount);
 
         vm.startPrank(USER.Address);
         orchestrator.withdrawFunds(false, USER_ID, withdrawAmount);
@@ -91,7 +87,7 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         uint256 userBalanceAfterWithdraw = userDB.getMetadata(USER_ID).Balance;
         assertEq(
             userBalanceAfterWithdraw,
-            5_000_000,
+            depositAmount - withdrawAmount,
             "User balance should be reduced by the withdrawn amount"
         );
 
@@ -102,21 +98,14 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         );
     }
 
-    function test_fuzz_withdrawFunds_artist() public {
-
-        ///@dev First, make a donation to the artist to have a balance to withdraw
-
-        uint256 donationAmount = 30_000_000; // 30 USDC with 6 decimals
+    function test_fuzz_withdrawFunds_artist(uint112 donationAmount, uint112 withdrawAmount) public {
+        vm.assume(withdrawAmount <= donationAmount);
 
         _execute_orchestrator_depositFunds(USER_ID, USER.Address, donationAmount);
 
         vm.startPrank(USER.Address);
         orchestrator.makeDonation(USER_ID, ARTIST_1_ID, donationAmount);
         vm.stopPrank();
-
-        ///@dev Now, withdraw funds as the artist
-
-        uint256 withdrawAmount = 10_000_000; // 10 USDC with 6 decimals
 
         vm.startPrank(ARTIST_1.Address);
         orchestrator.withdrawFunds(true, ARTIST_1_ID, withdrawAmount);
@@ -125,7 +114,7 @@ contract Orchestrator_test_fuzz_Funds is Constants {
         uint256 artistBalanceAfterWithdraw = artistDB.getMetadata(ARTIST_1_ID).Balance;
         assertEq(
             artistBalanceAfterWithdraw,
-            20_000_000,
+            donationAmount - withdrawAmount,
             "Artist balance should be reduced by the withdrawn amount"
         );
 
