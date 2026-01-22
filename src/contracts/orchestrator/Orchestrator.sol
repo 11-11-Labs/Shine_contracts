@@ -909,6 +909,14 @@ contract Orchestrator is Ownable {
         return newOrchestratorAddress;
     }
 
+    /**
+     * @notice Gets the current version of the Orchestrator contract
+     * @return Version string
+     */
+    function version() external pure returns (string memory) {
+        return "0.1.0";
+    }
+
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Internal Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
     /**
