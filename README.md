@@ -1,66 +1,388 @@
-## Foundry
+# Shine Music Platform - Smart Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+![Solidity](https://img.shields.io/badge/Solidity-^0.8.20-blue)
+![License](https://img.shields.io/badge/License-SHINE--PPL--1.0-red)
+![Foundry](https://img.shields.io/badge/Framework-Foundry-orange)
+![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
 
-Foundry consists of:
+> **Shine** is a decentralized music marketplace that combines the best of modern music platforms like Bandcamp with the power of blockchain technology. Our smart contracts serve as an immutable source of truth for the entire ecosystem, ensuring that even if the platform disappears, users can always recover their music purchases, artist histories, and transaction records.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Overview
 
-## Documentation
+Shine Smart Contracts provide a robust, decentralized foundation for a music platform featuring:
 
-https://book.getfoundry.sh/
+- **Permanent Records**: Immutable on-chain database of songs, albums, artists, and users
+- **True Ownership**: Users genuinely own their digital music purchases
+- **Artist Support**: Native royalty tracking and balance management for musicians
+- **Platform Resilience**: Source of truth persists even if the main platform goes offline
+- **Upgradeable Architecture**: Ability to deploy new Orchestrator versions without losing data
 
-## Usage
+## Architecture
 
-### Build
+The Shine contracts follow a **Database + Orchestrator** pattern:
+
+```
+┌─────────────────────────────────────────┐
+│      Orchestrator (v1, v2, v3...)       │
+│  (Business Logic & User Interface)      │
+└─────────────────────────────────────────┘
+           │         │         │         │
+           │         │         │         └─→ ISongDB
+           │         │         └─→ IAlbumDB
+           │         └─→ IArtistDB
+           └─→ IUserDB
+
+    Each Database:
+    • Sealed under Ownable pattern
+    • Only accessible via current Orchestrator (owner)
+    • Permanent, immutable records
+    • Can point to new Orchestrator versions
+```
+
+### Database Contracts
+
+#### **AlbumDB** - Album Management
+- Stores album metadata (title, artist, songs, pricing)
+- Tracks purchases and gifts by user
+- Manages special editions with limited supply
+- Supports album banning (removed from platform)
+- Emits events for all state changes
+
+```solidity
+key features:
+├── register() - Create new album
+├── purchase() - Record user purchase
+├── gift() - Record gifted album
+├── refund() - Handle refunds
+└── ban/unban - Moderation capabilities
+```
+
+#### **ArtistDB** - Artist Registry
+- Stores artist profiles and metadata
+- Tracks artist balances and accumulated royalties
+- Manages artist wallet addresses
+- Supports artist banning/unbanning
+- Independent from user accounts
+
+```solidity
+key features:
+├── register() - Register new artist
+├── changeBasicData() - Update profile
+├── addBalance() / deductBalance() - Financial tracking
+├── addAccumulatedRoyalties() - Royalty accumulation
+└── ban/unban - Moderation capabilities
+```
+
+#### **SongDB** - Song Records
+- Stores individual song metadata
+- Tracks song ownership (purchased/gifted)
+- Manages song availability and pricing
+- Supports song banning
+- Links to artist information
+
+```solidity
+key features:
+├── register() - Create new song
+├── purchase() - Record purchase
+├── gift() - Record gift
+├── refund() - Handle refunds
+└── ban/unban - Moderation
+```
+
+#### **UserDB** - User Profiles
+- Manages user registration and metadata
+- Tracks purchase history (array of songs)
+- Manages user balances
+- Handles user address changes
+- Supports user banning
+
+```solidity
+key features:
+├── register() - Register new user
+├── changeBasicData() - Update profile
+├── addSong() / deleteSong() - Purchase tracking
+├── addBalance() / deductBalance() - Balance management
+└── ban/unban - Moderation
+```
+
+### Orchestrator Contract
+
+**Orchestrator.sol** - Central Business Logic Hub
+- Coordinates all database interactions
+- Enforces business rules and access control
+- Manages stablecoin payments and fees
+- Handles complex multi-contract transactions
+- Implements royalty distribution
+
+```solidity
+key features:
+├── Registration & Profile Management
+│   ├── register() - Register users/artists
+│   ├── changeBasicData() - Update profiles
+│   └── changeAddress() - Transfer accounts
+│
+├── Music Transactions
+│   ├── purchaseSong() - Buy individual songs
+│   ├── purchaseAlbum() - Buy full albums
+│   ├── giftSong() - Gift music to users
+│   ├── giftAlbum() - Gift albums
+│   └── refundSong() / refundAlbum() - Process refunds
+│
+├── Artist Features
+│   ├── Royalty tracking
+│   ├── Balance management
+│   └── Withdrawal capability
+│
+└── Admin Functions
+    ├── Fee collection
+    ├── Stablecoin management (with timelock)
+    ├── Ban/unban users, artists, songs
+    └── Orchestrator migration
+```
+
+## Data Flow Example: Song Purchase
+
+```
+User calls:
+  Orchestrator.purchaseSong(songId, userId)
+         ↓
+Orchestrator validates:
+  • Song exists & not banned
+  • User exists & not banned
+  • User hasn't already owned
+  • Sufficient stablecoin balance
+         ↓
+Orchestrator calls SongDB.purchase()
+  → SongDB marks ownership
+  → SongDB increments purchase counter
+  → SongDB emits Purchased event
+         ↓
+Orchestrator calls UserDB.addSong()
+  → UserDB adds to purchase history
+  → UserDB emits SongListChanged event
+         ↓
+Orchestrator handles payment:
+  • Calculate: net price + platform fee
+  • Transfer stablecoin from user
+  • Distribute to artist balance
+  • Collect platform fee
+         ↓
+Transaction complete
+Immutable record created on blockchain
+```
+
+## Key Features
+
+### Permanent Records
+- All data stored permanently on-chain
+- Immutable transaction history
+- Accessible even if platform UI disappears
+- True decentralized source of truth
+
+### Access Control
+- **Ownable Pattern**: Each database sealed under its Orchestrator
+- **Role-Based**: Users, artists, admin all have distinct permissions
+- **Upgradeable**: Point databases to new Orchestrator without data loss
+
+### Data Integrity
+- Unique ID generation via `IdUtils` (sequential, collision-proof)
+- Ownership tracking (purchased vs. gifted)
+- Purchase counters and timestamps
+- Event logging for all state changes
+
+### Platform Resilience
+- **Immutable Databases**: Can never be destroyed
+- **Migration Path**: Deploy new Orchestrator, redirect pointers
+- **Proxy Alternative**: Or implement proxy pattern for direct logic updates
+- **Community Recovery**: Anyone can query data even if official platform goes down
+
+## Setup & Development
+
+### Prerequisites
+- Foundry installed: https://book.getfoundry.sh/getting-started/installation
+- Solidity ^0.8.20
+
+### Installation
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd Shine_contracts
+
+# Install dependencies
+forge install
+
+# Build contracts
+forge build
+```
+
+### Building
 
 ```shell
 $ forge build
 ```
 
-### Test
+### Testing
 
 ```shell
 $ forge test
 ```
 
-### Format
+Run specific tests:
+```shell
+$ forge test --match-contract AlbumDB
+$ forge test --match-path test/uint/correct/*.sol -v
+```
 
+### Code Quality
+
+Format code:
 ```shell
 $ forge fmt
 ```
 
-### Gas Snapshots
+### Gas Analysis
 
+Generate gas snapshots:
 ```shell
 $ forge snapshot
 ```
 
-### Anvil
+### Local Development
 
+Start local Ethereum node:
 ```shell
 $ anvil
 ```
 
-### Deploy
-
+Deploy locally:
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ forge script script/SongDataBase.s.sol --rpc-url http://localhost:8545 --broadcast
 ```
 
-### Cast
+### Deployment
 
+Deploy to network:
 ```shell
-$ cast <subcommand>
+$ forge script script/SongDataBase.s.sol:SongDataBaseScript \
+  --rpc-url <your_rpc_url> \
+  --private-key <your_private_key> \
+  --broadcast
 ```
 
-### Help
+## Contract License
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+This project uses the **SHINE-PPL-1.0** (Shine Platform Partnership License), a custom license that:
+- Allows deployment and use of Shine
+- Requires partnerships for commercial use
+- Protects the Shine brand and ecosystem
+- Ensures fair compensation for platform development
+
+## Project Structure
+
 ```
+Shine_contracts/
+├── src/
+│   ├── contracts/
+│   │   ├── database/
+│   │   │   ├── AlbumDB.sol      # Album management
+│   │   │   ├── ArtistDB.sol     # Artist registry
+│   │   │   ├── SongDB.sol       # Song records
+│   │   │   └── UserDB.sol       # User profiles
+│   │   └── orchestrator/
+│   │       ├── Orchestrator.sol # Central logic hub
+│   │       └── library/
+│   │           ├── ErrorsLib.sol
+│   │           ├── EventsLib.sol
+│   │           └── StructsLib.sol
+│   ├── interface/
+│   │   ├── IAlbumDB.sol
+│   │   ├── IArtistDB.sol
+│   │   ├── ISongDB.sol
+│   │   ├── IUserDB.sol
+│   │   └── IERC20.sol
+│   └── library/
+│       └── IdUtils.sol          # Sequential ID generation
+│
+├── test/
+│   ├── uint/                    # Unit tests
+│   │   ├── correct/             # Happy path tests
+│   │   └── revert/              # Revert condition tests
+│   └── fuzz/                    # Fuzzing tests
+│
+├── script/
+│   └── SongDataBase.s.sol       # Deployment scripts
+│
+├── lib/
+│   ├── forge-std/               # Foundry standard library
+│   └── solady/                  # Optimized Solady utilities
+│
+├── foundry.toml                 # Foundry configuration
+├── Makefile                     # Convenient make commands
+└── README.md                    # This file
+```
+
+## Deployment Considerations
+
+### Orchestrator Initialization
+1. Deploy Orchestrator with initial owner, stablecoin, and fee %
+2. Deploy AlbumDB, ArtistDB, SongDB, UserDB with Orchestrator address
+3. Set database addresses in Orchestrator
+4. Enable breaker flags for operational readiness
+
+### Migration Strategy (Future)
+1. Deploy new Orchestrator version with improved logic
+2. Point all databases to new Orchestrator
+3. OR implement proxy pattern for direct logic updates
+4. Historical data remains intact and queryable
+
+## Use Cases
+
+### For Users
+- Purchase songs and albums permanently
+- Gift music to other users
+- View complete purchase history
+- Recover purchase records from blockchain even if platform down
+
+### For Artists
+- Register and manage profiles
+- Track accumulated royalties
+- Monitor sales and earnings
+- Maintain permanent record of published works
+
+### For Platform
+- Decentralized source of truth
+- Fee collection and reporting
+- User/artist banning for moderation
+- Graceful upgrades through new Orchestrator versions
+
+## External Dependencies
+
+- **Solady** (`@solady/auth/Ownable.sol`): Optimized Ownable implementation
+- **Foundry Std** (`forge-std`): Testing and scripting utilities
+- **ERC20 Interface**: Standard token interactions
+
+## License
+
+SHINE-PPL-1.0 (Shine Platform Partnership License)
+
+## Contributing
+
+Contributions welcome! Please ensure:
+- All tests pass (`forge test`)
+- Code formatted (`forge fmt`)
+- Comments documented
+- No unsafe patterns
+- Gas-optimized where possible
+
+## Support
+
+For questions or issues:
+- Check existing documentation
+- Review contract comments and NatSpec
+- Examine test files for usage examples
+- Contact 11:11 Labs
+
+---
+
+**Built with ❤️ by 11:11 Labs**
