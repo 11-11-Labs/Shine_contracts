@@ -111,7 +111,7 @@ contract AlbumDB is IdUtils, Ownable {
      *  @notice Tracks if a song ID is already used in any album
      *  @dev Prevents duplicate song assignments across albums
      */
-    mapping(uint256 songId => bool) private songUsedInAlbum;
+    mapping(uint256 songId => uint256 Id) private songUsedInAlbum;
 
     /**
      * @notice Tracks the index location of a user in a album's listOfOwners array
@@ -246,14 +246,14 @@ contract AlbumDB is IdUtils, Ownable {
         string memory specialEditionName,
         uint256 maxSupplySpecialEdition
     ) external onlyOwner returns (uint256) {
+        uint256 idAssigned = _getNextId();
+
         for (uint256 i = 0; i < songIDs.length; i++) {
-            if (songUsedInAlbum[songIDs[i]])
+            if (songUsedInAlbum[songIDs[i]] != 0)
                 revert SongAlreadyUsedInAlbum(songIDs[i]);
 
-            songUsedInAlbum[songIDs[i]] = true;
+            songUsedInAlbum[songIDs[i]] = idAssigned;
         }
-
-        uint256 idAssigned = _getNextId();
 
         album[idAssigned] = Metadata({
             Title: title,
@@ -432,6 +432,8 @@ contract AlbumDB is IdUtils, Ownable {
         uint256 maxSupplySpecialEdition
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
         if (musicIds.length == 0) revert AlbumCannotHaveZeroSongs();
+
+        _clearAndValidateSongs(id, musicIds);
 
         album[id] = Metadata({
             Title: title,
@@ -617,6 +619,33 @@ contract AlbumDB is IdUtils, Ownable {
             revert CannotSeeListOfOwners();
 
         return album[id].listOfOwners;
+    }
+
+    //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Private Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /**
+     * @notice Clears previous song assignments and validates new song IDs
+     * @dev Used during album updates to ensure no duplicate song usage across albums
+     *      Reverts if any new song ID is already assigned to another album.
+     * @param id The album ID being updated
+     * @param musicIds New array of song IDs to validate
+     */
+    function _clearAndValidateSongs(uint256 id, uint256[] memory musicIds) private {
+        for (uint256 i = 0; i < album[id].MusicIds.length; i++) {
+            delete songUsedInAlbum[album[id].MusicIds[i]];
+        }
+        _validateSongs(musicIds);
+    }
+
+    /**
+     * @notice Validates that song IDs are not already used in other albums
+     * @dev Reverts if any song ID is found to be already assigned
+     * @param musicIds Array of song IDs to validate
+     */
+    function _validateSongs(uint256[] memory musicIds) private view {
+        for (uint256 i = 0; i < musicIds.length; i++) {
+            if (songUsedInAlbum[musicIds[i]] != 0)
+                revert SongAlreadyUsedInAlbum(musicIds[i]);
+        }
     }
 }
 
