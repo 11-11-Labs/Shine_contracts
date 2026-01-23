@@ -23,10 +23,10 @@ import {ErrorsLib} from "@shine/contracts/orchestrator/library/ErrorsLib.sol";
 import {StructsLib} from "@shine/contracts/orchestrator/library/StructsLib.sol";
 import {EventsLib} from "@shine/contracts/orchestrator/library/EventsLib.sol";
 
-import {ISongDB} from "@shine/interface/ISongDB.sol";
-import {IAlbumDB} from "@shine/interface/IAlbumDB.sol";
-import {IArtistDB} from "@shine/interface/IArtistDB.sol";
-import {IUserDB} from "@shine/interface/IUserDB.sol";
+import {SongDB} from "@shine/contracts/database/SongDB.sol";
+import {AlbumDB} from "@shine/contracts/database/AlbumDB.sol";
+import {ArtistDB} from "@shine/contracts/database/ArtistDB.sol";
+import {UserDB} from "@shine/contracts/database/UserDB.sol";
 
 contract Orchestrator is Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
@@ -49,11 +49,11 @@ contract Orchestrator is Ownable {
     /// @notice Platform fee percentage in basis points (100 = 1%, 10000 = 100%)
     uint16 private percentageFee;
 
-    /// @notice Interface references to all database contracts
-    ISongDB private songDB;
-    IAlbumDB private albumDB;
-    IArtistDB private artistDB;
-    IUserDB private userDB;
+    /// @notice Contract references to all database contracts
+    SongDB private songDB;
+    AlbumDB private albumDB;
+    ArtistDB private artistDB;
+    UserDB private userDB;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Modifiers 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
 
@@ -655,10 +655,10 @@ contract Orchestrator is Ownable {
         dbAddress.song = _dbsong;
         dbAddress.user = _dbuser;
 
-        songDB = ISongDB(_dbsong);
-        albumDB = IAlbumDB(_dbalbum);
-        artistDB = IArtistDB(_dbartist);
-        userDB = IUserDB(_dbuser);
+        songDB = SongDB(_dbsong);
+        albumDB = AlbumDB(_dbalbum);
+        artistDB = ArtistDB(_dbartist);
+        userDB = UserDB(_dbuser);
         breaker.addressSetup = bytes1(0x01);
     }
 
