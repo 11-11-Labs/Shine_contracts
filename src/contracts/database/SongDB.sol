@@ -21,6 +21,8 @@ import {Ownable} from "@solady/auth/Ownable.sol";
 
 contract SongDB is IdUtils, Ownable {
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Errors 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /// @dev Thrown when attempting to access a song that is not assigned to any album
+    error SongNotAssignedToAlbum();
     /// @dev Thrown when attempting to access a song that does not exist
     error SongDoesNotExist();
     /// @dev Thrown when attempting to interact with a banned song
@@ -33,6 +35,8 @@ contract SongDB is IdUtils, Ownable {
     error UserDoesNotOwnSong();
     /// @dev Thrown when attempting to view the list of owners while it is not visible
     error CannotSeeListOfOwners();
+    /// @dev Thrown when attempting to register or update a song with a zero album ID
+    error AlbumIdCannotBeZero();
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Type Declarations 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Stores all metadata associated with a song
@@ -74,7 +78,7 @@ contract SongDB is IdUtils, Ownable {
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /** 
+    /**
      *  @notice Tracks whether the list of song owners is publicly visible
      *  @dev If false, only the owner (Orchestrator) can view the full list
      */
@@ -94,6 +98,12 @@ contract SongDB is IdUtils, Ownable {
      * @dev Private mapping to prevent direct external access
      */
     mapping(uint256 Id => Metadata) private song;
+
+    /**
+     * @notice Tracks the album ID each song is assigned to
+     * @dev Used to manage song-album relationships
+     */
+    mapping(uint256 Id => uint256 albumId) private assignedToAlbumId;
 
     /**
      * @notice Tracks the index location of a user in a song's listOfOwners array
@@ -190,6 +200,16 @@ contract SongDB is IdUtils, Ownable {
         _;
     }
 
+    /**
+     * @notice Ensures the song is assigned to an album before executing the function
+     * @dev Reverts with SongNotAssignedToAlbum if the song is not linked to any album
+     * @param songId The song ID to validate
+     */
+    modifier isIdAssignedToAlbum(uint256 songId) {
+        if (assignedToAlbumId[songId] == 0) revert SongNotAssignedToAlbum();
+        _;
+    }
+
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Constructor 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Initializes the SongDB contract
@@ -254,7 +274,13 @@ contract SongDB is IdUtils, Ownable {
     function purchase(
         uint256 id,
         uint256 userId
-    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
+    )
+        external
+        onlyOwner
+        onlyIfExist(id)
+        onlyIfNotBanned(id)
+        isIdAssignedToAlbum(id)
+    {
         if (!song[id].CanBePurchased) revert SongCannotBePurchased();
         if (ownByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
 
@@ -275,7 +301,13 @@ contract SongDB is IdUtils, Ownable {
     function gift(
         uint256 id,
         uint256 toUserId
-    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
+    )
+        external
+        onlyOwner
+        onlyIfExist(id)
+        onlyIfNotBanned(id)
+        isIdAssignedToAlbum(id)
+    {
         if (ownByUserId[id][toUserId] != 0x00) revert UserAlreadyOwns();
 
         ownByUserId[id][toUserId] = 0x02;
@@ -306,7 +338,7 @@ contract SongDB is IdUtils, Ownable {
 
         /// @dev If ownerSlotPlusOne is 0, the user was never added to the list
         if (ownerSlotPlusOne == 0) revert UserDoesNotOwnSong();
-        
+
         /// @dev Convert to 0-indexed position for array access
         uint256 ownerSlot = ownerSlotPlusOne - 1;
 
@@ -321,7 +353,7 @@ contract SongDB is IdUtils, Ownable {
             /// @dev Update the moved user's index in the mapping (store as 1-indexed)
             ownerIndex[id][lastUser] = ownerSlot + 1;
         }
-        
+
         /// @dev Remove the last element (either the removed user or the duplicate after swap)
         song[id].listOfOwners.pop();
 
@@ -403,6 +435,20 @@ contract SongDB is IdUtils, Ownable {
         song[id].Price = price;
 
         emit Changed(id, block.timestamp, ChangeType.PriceChanged);
+    }
+
+    /**
+     * @notice Assigns a song to a specific album
+     * @dev Only callable by owner. Updates the assignedToAlbumId mapping.
+     * @param id The song ID to assign
+     * @param albumId The album ID to assign the song to
+     */
+    function assignToAlbum(
+        uint256 id,
+        uint256 albumId
+    ) external onlyOwner onlyIfExist(id) {
+        if (albumId == 0) revert AlbumIdCannotBeZero();
+        assignedToAlbumId[id] = albumId;
     }
 
     /**
@@ -527,6 +573,15 @@ contract SongDB is IdUtils, Ownable {
      */
     function getMetadata(uint256 id) external view returns (Metadata memory) {
         return song[id];
+    }
+
+    /**
+     * @notice Retrieves the album ID a song is assigned to
+     * @param id The song ID to query
+     * @return The album ID the song is linked to
+     */
+    function getAssignedAlbumId(uint256 id) external view returns (uint256) {
+        return assignedToAlbumId[id];
     }
 
     /**
