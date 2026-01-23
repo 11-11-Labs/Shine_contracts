@@ -15,7 +15,7 @@ contract AlbumDB_test_fuzz is Constants {
         string title;
         uint256 principalArtistId;
         string metadataURI;
-        uint256[] musicIds;
+        uint256[3] musicIds;
         uint256 price;
         bool isPurchasable;
         bool isASpecialEdition;
@@ -23,15 +23,22 @@ contract AlbumDB_test_fuzz is Constants {
         uint256 maxSupplySpecialEdition;
     }
 
-    function test_fuzz_AlbumDB__register(
-        RegisterInputs memory inputs
-    ) public {
+    function test_fuzz_AlbumDB__register(RegisterInputs memory inputs) public {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.assume(
+            inputs.musicIds[0] != inputs.musicIds[1] &&
+                inputs.musicIds[0] != inputs.musicIds[2] &&
+                inputs.musicIds[1] != inputs.musicIds[2]
+        );
+        uint256[] memory musicIds = new uint256[](3);
+        for (uint256 i = 0; i < 3; i++) {
+            musicIds[i] = inputs.musicIds[i];
+        }
         uint256 assignedId = albumDB.register(
             inputs.title,
             inputs.principalArtistId,
             inputs.metadataURI,
-            inputs.musicIds,
+            musicIds,
             inputs.price,
             inputs.isPurchasable,
             inputs.isASpecialEdition,
@@ -57,7 +64,7 @@ contract AlbumDB_test_fuzz is Constants {
             "Metadata URI should match"
         );
         assertEq(
-            inputs.musicIds,
+            musicIds,
             albumDB.getMetadata(assignedId).MusicIds,
             "Song IDs should match"
         );
@@ -121,9 +128,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_fuzz_AlbumDB__gift(
-        uint256 receiver
-    ) public {
+    function test_fuzz_AlbumDB__gift(uint256 receiver) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -156,9 +161,7 @@ contract AlbumDB_test_fuzz is Constants {
         );
     }
 
-    function test_fuzz_AlbumDB__purchaseSpecialEdition(
-        uint256 buyer
-    ) public {
+    function test_fuzz_AlbumDB__purchaseSpecialEdition(uint256 buyer) public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
         listOfSongIDs[1] = 21;
@@ -177,10 +180,7 @@ contract AlbumDB_test_fuzz is Constants {
             67
             // he he c:
         );
-        uint256[] memory purchasedSongIDs = albumDB.purchase(
-            assignedId,
-            buyer
-        );
+        uint256[] memory purchasedSongIDs = albumDB.purchase(assignedId, buyer);
         vm.stopPrank();
 
         assertEq(
@@ -236,9 +236,7 @@ contract AlbumDB_test_fuzz is Constants {
         uint256 maxSupplySpecialEdition;
     }
 
-    function test_fuzz_AlbumDB__change(
-        ChangeInputs memory inputs
-    ) public {
+    function test_fuzz_AlbumDB__change(ChangeInputs memory inputs) public {
         vm.assume(bytes(inputs.title).length > 0);
         vm.assume(inputs.musicIds.length > 0);
         uint256[] memory listOfSongIDsBefore = new uint256[](3);
