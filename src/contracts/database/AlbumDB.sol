@@ -85,7 +85,7 @@ contract AlbumDB is IdUtils, Ownable {
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
-    /** 
+    /**
      *  @notice Tracks whether the list of album owners is publicly visible
      *  @dev If false, only the owner (Orchestrator) can view the full list
      */

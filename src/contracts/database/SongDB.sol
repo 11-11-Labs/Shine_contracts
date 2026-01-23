@@ -389,7 +389,7 @@ contract SongDB is IdUtils, Ownable {
         string memory metadataURI,
         bool canBePurchased,
         uint256 price
-    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) isIdAssignedToAlbum(id) {
         song[id] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
@@ -415,7 +415,7 @@ contract SongDB is IdUtils, Ownable {
     function changePurchaseability(
         uint256 id,
         bool canBePurchased
-    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) isIdAssignedToAlbum(id) {
         song[id].CanBePurchased = canBePurchased;
 
         emit Changed(id, block.timestamp, ChangeType.PurchaseabilityChanged);
@@ -431,7 +431,7 @@ contract SongDB is IdUtils, Ownable {
     function changePrice(
         uint256 id,
         uint256 price
-    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
+    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) isIdAssignedToAlbum(id) {
         song[id].Price = price;
 
         emit Changed(id, block.timestamp, ChangeType.PriceChanged);
@@ -446,9 +446,36 @@ contract SongDB is IdUtils, Ownable {
     function assignToAlbum(
         uint256 id,
         uint256 albumId
-    ) external onlyOwner onlyIfExist(id) {
+    ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
         if (albumId == 0) revert AlbumIdCannotBeZero();
         assignedToAlbumId[id] = albumId;
+    }
+
+    /**
+     * @notice Assigns multiple songs to a specific album in batch
+     * @dev Only callable by owner. Updates the assignedToAlbumId mapping for each song.
+     * @param songIds Array of song IDs to assign
+     * @param albumId The album ID to assign the songs to
+     */
+    function assignToAlbumBatch(
+        uint256[] calldata songIds,
+        uint256 albumId
+    ) external onlyOwner {
+        if (albumId == 0) revert AlbumIdCannotBeZero();
+        uint256 len = songIds.length;
+
+        for (uint256 i = 0; i < len; ) {
+            uint256 songId = songIds[i];
+
+            if (!exists(songId)) revert SongDoesNotExist();
+            if (song[songId].IsBanned) revert SongIsBanned();
+
+            assignedToAlbumId[songId] = albumId;
+
+            unchecked {
+                i++;
+            }
+        }
     }
 
     /**
@@ -465,6 +492,34 @@ contract SongDB is IdUtils, Ownable {
 
         if (isBanned) emit Banned(id);
         else emit Unbanned(id);
+    }
+
+    /**
+     * @notice Sets the banned status for multiple songs in batch
+     * @dev Only callable by owner. Banned songs cannot be purchased or modified.
+     * @param songIds Array of song IDs to update
+     * @param isBanned New banned status (true = banned from platform)
+     */
+    function setBannedStatusBatch(
+        uint256[] calldata songIds,
+        bool isBanned
+    ) external onlyOwner {
+        uint256 len = songIds.length;
+
+        for (uint256 i = 0; i < len; ) {
+            uint256 songId = songIds[i];
+
+            if (!exists(songId)) revert SongDoesNotExist();
+
+            song[songId].IsBanned = isBanned;
+
+            if (isBanned) emit Banned(songId);
+            else emit Unbanned(songId);
+
+            unchecked {
+                i++;
+            }
+        }
     }
 
     /**
