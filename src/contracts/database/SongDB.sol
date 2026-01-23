@@ -389,7 +389,13 @@ contract SongDB is IdUtils, Ownable {
         string memory metadataURI,
         bool canBePurchased,
         uint256 price
-    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) isIdAssignedToAlbum(id) {
+    )
+        external
+        onlyOwner
+        onlyIfNotBanned(id)
+        onlyIfExist(id)
+        isIdAssignedToAlbum(id)
+    {
         song[id] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
@@ -415,7 +421,13 @@ contract SongDB is IdUtils, Ownable {
     function changePurchaseability(
         uint256 id,
         bool canBePurchased
-    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) isIdAssignedToAlbum(id) {
+    )
+        external
+        onlyOwner
+        onlyIfNotBanned(id)
+        onlyIfExist(id)
+        isIdAssignedToAlbum(id)
+    {
         song[id].CanBePurchased = canBePurchased;
 
         emit Changed(id, block.timestamp, ChangeType.PurchaseabilityChanged);
@@ -431,7 +443,13 @@ contract SongDB is IdUtils, Ownable {
     function changePrice(
         uint256 id,
         uint256 price
-    ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) isIdAssignedToAlbum(id) {
+    )
+        external
+        onlyOwner
+        onlyIfNotBanned(id)
+        onlyIfExist(id)
+        isIdAssignedToAlbum(id)
+    {
         song[id].Price = price;
 
         emit Changed(id, block.timestamp, ChangeType.PriceChanged);
