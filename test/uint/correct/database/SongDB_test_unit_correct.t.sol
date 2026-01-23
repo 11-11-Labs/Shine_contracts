@@ -270,7 +270,7 @@ contract SongDB_test_unit_correct is Constants {
 
         vm.expectEmit();
         emit SongDB.Changed(
-            1,
+            assignedId,
             block.timestamp,
             SongDB.ChangeType.PurchaseabilityChanged
         );
@@ -300,7 +300,11 @@ contract SongDB_test_unit_correct is Constants {
         _songDB.assignToAlbum(assignedId, 1);
 
         vm.expectEmit();
-        emit SongDB.Changed(1, block.timestamp, SongDB.ChangeType.PriceChanged);
+        emit SongDB.Changed(
+            assignedId,
+            block.timestamp,
+            SongDB.ChangeType.PriceChanged
+        );
         _songDB.changePrice(assignedId, 1000);
         vm.stopPrank();
         assertEq(
@@ -325,6 +329,8 @@ contract SongDB_test_unit_correct is Constants {
             true,
             500
         );
+        vm.expectEmit();
+        emit SongDB.Banned(assignedId);
         _songDB.setBannedStatus(assignedId, true);
         vm.stopPrank();
         assertTrue(
