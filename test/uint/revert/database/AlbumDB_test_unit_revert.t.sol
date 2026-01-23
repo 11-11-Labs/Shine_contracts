@@ -37,6 +37,45 @@ contract AlbumDB_test_unit_revert is Constants {
         assertEq(assignedId, 0, "Assigned ID should be zero due to revert");
     }
 
+    function test_unit_revert_AlbumDB__register__SongAlreadyUsedInAlbum()
+        public
+    {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        _albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(AlbumDB.SongAlreadyUsedInAlbum.selector, 67)
+        );
+        uint256 assignedId2 = _albumDB.register(
+            "Another Album Title",
+            2,
+            "ipfs://anotherMetadataURI",
+            listOfSongIDs,
+            1500,
+            true,
+            false,
+            "",
+            0
+        );
+        vm.stopPrank();
+
+        assertEq(assignedId2, 0, "Assigned ID should be zero due to revert");
+    }
     function test_unit_revert_AlbumDB__purchase__Unauthorized() public {
         uint256[] memory listOfSongIDs = new uint256[](3);
         listOfSongIDs[0] = 67;
@@ -495,6 +534,64 @@ contract AlbumDB_test_unit_revert is Constants {
         );
     }
 
+    function test_unit_revert_AlbumDB__change__SongAlreadyUsedInAlbum()
+        public
+    {
+        uint256[] memory listOfSongIDs1 = new uint256[](2);
+        listOfSongIDs1[0] = 1;
+        listOfSongIDs1[1] = 2;
+
+        uint256[] memory listOfSongIDs2 = new uint256[](2);
+        listOfSongIDs2[0] = 3;
+        listOfSongIDs2[1] = 4;
+
+        uint256[] memory listOfSongIDsAfter = new uint256[](2);
+        listOfSongIDsAfter[0] = 3;
+        listOfSongIDsAfter[1] = 21;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId1 = _albumDB.register(
+            "Album One",
+            1,
+            "ipfs://metadataURI1",
+            listOfSongIDs1,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+
+        uint256 assignedId2 = _albumDB.register(
+            "Album Two",
+            2,
+            "ipfs://metadataURI2",
+            listOfSongIDs2,
+            1500,
+            true,
+            false,
+            "",
+            0
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(AlbumDB.SongAlreadyUsedInAlbum.selector, 3)
+        );
+        _albumDB.change(
+            assignedId1,
+            "New Album Title",
+            2,
+            "ipfs://newMetadataURI",
+            listOfSongIDsAfter,
+            2000,
+            true,
+            true,
+            "Special Ultra Turbo Deluxe Edition Remaster Battle Royale with Banjo-Kazooie & Nnuckles NEW Funky Mode (Featuring Dante from Devil May Cry Series)",
+            67
+        );
+        vm.stopPrank();
+    }
+
     function test_unit_revert_AlbumDB__change__AlbumIsBanned() public {
         uint256[] memory listOfSongIDsBefore = new uint256[](3);
         listOfSongIDsBefore[0] = 67;
@@ -865,5 +962,12 @@ contract AlbumDB_test_unit_revert is Constants {
             _albumDB.getMetadata(9999).IsBanned,
             "Album should remain unbanned due to revert"
         );
+    }
+
+    function test_unit_correct_AlbumDB__setListVisibility__Unauthorized() public {
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _albumDB.setListVisibility( true);
+        vm.stopPrank();
     }
 }

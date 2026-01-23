@@ -18,6 +18,8 @@ contract AlbumDB_test_unit_correct is Constants {
         listOfSongIDs[2] = 420;
 
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectEmit();
+        emit AlbumDB.Registered(1);
         uint256 assignedId = _albumDB.register(
             "Album Title",
             1,
@@ -95,6 +97,8 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
+        vm.expectEmit();
+        emit AlbumDB.Purchased(assignedId, 1234, block.timestamp);
         uint256[] memory purchasedSongIDs = _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
@@ -107,6 +111,13 @@ contract AlbumDB_test_unit_correct is Constants {
             _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
+        );
+        uint256[] memory confirmedOwners = new uint256[](1);
+        confirmedOwners[0] = 1234;
+        assertEq(
+            _albumDB.getMetadata(assignedId).listOfOwners,
+            confirmedOwners,
+            "There should be one owner after purchase"
         );
     }
 
@@ -128,6 +139,8 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
+        vm.expectEmit();
+        emit AlbumDB.Gifted(assignedId, 1234, block.timestamp);
         uint256[] memory giftedSongIDs = _albumDB.gift(assignedId, 1234);
         vm.stopPrank();
 
@@ -135,6 +148,14 @@ contract AlbumDB_test_unit_correct is Constants {
             giftedSongIDs,
             listOfSongIDs,
             "Gifted song IDs should match the registered ones"
+        );
+
+        uint256[] memory confirmedOwners = new uint256[](1);
+        confirmedOwners[0] = 1234;
+        assertEq(
+            _albumDB.getMetadata(assignedId).listOfOwners,
+            confirmedOwners,
+            "There should be one owner after gifting"
         );
     }
 
@@ -157,6 +178,8 @@ contract AlbumDB_test_unit_correct is Constants {
             67
             // he he c:
         );
+        vm.expectEmit();
+        emit AlbumDB.Purchased(assignedId, 1234, block.timestamp);
         uint256[] memory purchasedSongIDs = _albumDB.purchase(assignedId, 1234);
         vm.stopPrank();
 
@@ -169,6 +192,14 @@ contract AlbumDB_test_unit_correct is Constants {
             _albumDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should be incremented to 1"
+        );
+
+        uint256[] memory confirmedOwners = new uint256[](1);
+        confirmedOwners[0] = 1234;
+        assertEq(
+            _albumDB.getMetadata(assignedId).listOfOwners,
+            confirmedOwners,
+            "There should be one owner after purchase"
         );
     }
 
@@ -191,13 +222,22 @@ contract AlbumDB_test_unit_correct is Constants {
             0
         );
         _albumDB.purchase(assignedId, 1234);
+        vm.expectEmit();
+        emit AlbumDB.Refunded(assignedId, 1234, block.timestamp);
         _albumDB.refund(assignedId, 1234);
         vm.stopPrank();
 
         assertEq(
             _albumDB.getMetadata(assignedId).TimesBought,
             0,
-            "Times bought should be decremented to 0"
+            "Times bought should be decremented to 0 after refund"
+        );
+
+        uint256[] memory emptyOwners = new uint256[](0);
+        assertEq(
+            _albumDB.getMetadata(assignedId).listOfOwners,
+            emptyOwners,
+            "There should be no owners after refund"
         );
     }
 
@@ -224,6 +264,12 @@ contract AlbumDB_test_unit_correct is Constants {
             0
         );
 
+        vm.expectEmit();
+        emit AlbumDB.Changed(
+            assignedId,
+            block.timestamp,
+            AlbumDB.ChangeType.MetadataUpdated
+        );
         _albumDB.change(
             assignedId,
             "New Album Title",
@@ -301,6 +347,12 @@ contract AlbumDB_test_unit_correct is Constants {
             "",
             0
         );
+        vm.expectEmit();
+        emit AlbumDB.Changed(
+            assignedId,
+            block.timestamp,
+            AlbumDB.ChangeType.PurchaseabilityChanged
+        );
         _albumDB.changePurchaseability(assignedId, false);
         vm.stopPrank();
         assertFalse(
@@ -326,6 +378,12 @@ contract AlbumDB_test_unit_correct is Constants {
             false,
             "",
             0
+        );
+        vm.expectEmit();
+        emit AlbumDB.Changed(
+            assignedId,
+            block.timestamp,
+            AlbumDB.ChangeType.PriceChanged
         );
         _albumDB.changePrice(assignedId, 67);
         vm.stopPrank();
@@ -360,5 +418,34 @@ contract AlbumDB_test_unit_correct is Constants {
             _albumDB.getMetadata(assignedId).IsBanned,
             "Album should be banned"
         );
+    }
+
+    function test_unit_correct_AlbumDB__setListVisibility() public {
+        uint256[] memory listOfSongIDs = new uint256[](3);
+        listOfSongIDs[0] = 67;
+        listOfSongIDs[1] = 21;
+        listOfSongIDs[2] = 420;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _albumDB.register(
+            "Album Title",
+            1,
+            "ipfs://metadataURI",
+            listOfSongIDs,
+            1000,
+            true,
+            false,
+            "",
+            0
+        );
+        _albumDB.purchase(assignedId, 67);
+
+        _albumDB.setListVisibility(true);
+        vm.stopPrank();
+        
+        uint256[] memory owners = _albumDB.getListOfOwners(assignedId);
+
+        assertEq(owners.length, 1, "There should be one owner in the list");
+        assertEq(owners[0], 67, "The owner ID should be 67");
     }
 }
