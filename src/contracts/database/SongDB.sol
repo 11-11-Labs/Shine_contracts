@@ -31,7 +31,8 @@ contract SongDB is IdUtils, Ownable {
     error UserAlreadyOwns();
     /// @dev Thrown when trying to refund a song the user does not own
     error UserDoesNotOwnSong();
-
+    /// @dev Thrown when attempting to view the list of owners while it is not visible
+    error CannotSeeListOfOwners();
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Type Declarations 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Stores all metadata associated with a song
@@ -45,6 +46,8 @@ contract SongDB is IdUtils, Ownable {
      * @param Price The net purchase price for this song (in wei or token units).
      *              Does not include platform fees or taxes.
      * @param TimesBought Counter tracking total number of purchases
+     * @param listOfOwners Dynamic array storing all user IDs that own this song.
+     *                     Used for tracking and iterating over song owners.
      * @param IsBanned Flag indicating if the song has been banned from the platform
      */
     struct Metadata {
@@ -56,6 +59,7 @@ contract SongDB is IdUtils, Ownable {
         bool CanBePurchased;
         uint256 Price;
         uint256 TimesBought;
+        uint256[] listOfOwners;
         bool IsBanned;
     }
 
@@ -70,6 +74,11 @@ contract SongDB is IdUtils, Ownable {
     }
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 State Variables 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
+    /** 
+     *  @notice Tracks whether the list of song owners is publicly visible
+     *  @dev If false, only the owner (Orchestrator) can view the full list
+     */
+    bool private listVisibility;
     /**
      * @notice Tracks whether a user owns a specific song
      * @dev Mapping: songId => userId => status
@@ -84,7 +93,14 @@ contract SongDB is IdUtils, Ownable {
      * @notice Stores all song metadata indexed by song ID
      * @dev Private mapping to prevent direct external access
      */
-    mapping(uint256 Id => Metadata) private songs;
+    mapping(uint256 Id => Metadata) private song;
+
+    /**
+     * @notice Tracks the index location of a user in a song's listOfOwners array
+     * @dev Used for efficient removal of users from ownership list during refunds
+     */
+    mapping(uint256 Id => mapping(uint256 userId => uint256 locationOnIndex))
+        private ownerIndex;
 
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Events 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
@@ -170,7 +186,7 @@ contract SongDB is IdUtils, Ownable {
      * @param id The song ID to validate
      */
     modifier onlyIfNotBanned(uint256 id) {
-        if (songs[id].IsBanned) revert SongIsBanned();
+        if (song[id].IsBanned) revert SongIsBanned();
         _;
     }
 
@@ -210,7 +226,7 @@ contract SongDB is IdUtils, Ownable {
     ) external onlyOwner returns (uint256) {
         uint256 idAssigned = _getNextId();
 
-        songs[idAssigned] = Metadata({
+        song[idAssigned] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
             ArtistIDs: artistIDs,
@@ -219,6 +235,7 @@ contract SongDB is IdUtils, Ownable {
             CanBePurchased: canBePurchased,
             Price: price,
             TimesBought: 0,
+            listOfOwners: new uint256[](0),
             IsBanned: false
         });
 
@@ -238,11 +255,13 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner onlyIfExist(id) onlyIfNotBanned(id) {
-        if (!songs[id].CanBePurchased) revert SongCannotBePurchased();
+        if (!song[id].CanBePurchased) revert SongCannotBePurchased();
         if (ownByUserId[id][userId] != 0x00) revert UserAlreadyOwns();
 
         ownByUserId[id][userId] = 0x01;
-        songs[id].TimesBought++;
+        song[id].TimesBought++;
+        song[id].listOfOwners.push(userId);
+        ownerIndex[id][userId] = song[id].listOfOwners.length;
 
         emit Purchased(id, userId, block.timestamp);
     }
@@ -260,7 +279,8 @@ contract SongDB is IdUtils, Ownable {
         if (ownByUserId[id][toUserId] != 0x00) revert UserAlreadyOwns();
 
         ownByUserId[id][toUserId] = 0x02;
-        songs[id].TimesBought++;
+        song[id].TimesBought++;
+        song[id].listOfOwners.push(toUserId);
 
         emit Gifted(id, toUserId, block.timestamp);
     }
@@ -268,6 +288,12 @@ contract SongDB is IdUtils, Ownable {
     /**
      * @notice Processes a refund for a previously purchased/gifted song
      * @dev Only callable by owner. Reverts if user hasn't owned the song.
+     *      Uses a swap-and-pop algorithm for O(1) removal from the listOfOwners array:
+     *      1. Retrieve the user's position from ownerIndex (stored as position + 1)
+     *      2. Swap the user with the last element in the array
+     *      3. Update the swapped user's index in ownerIndex
+     *      4. Pop the last element (now the removed user)
+     *      5. Clean up mappings and decrement TimesBought
      * @param id The song ID to refund
      * @param userId The unique identifier of the user requesting refund
      */
@@ -275,10 +301,37 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 userId
     ) external onlyOwner onlyIfExist(id) {
-        if (ownByUserId[id][userId] == 0x00) revert UserDoesNotOwnSong();
+        /// @dev Retrieve the stored index (1-indexed to distinguish from "not found")
+        uint256 ownerSlotPlusOne = ownerIndex[id][userId];
 
-        ownByUserId[id][userId] = 0x00;
-        songs[id].TimesBought--;
+        /// @dev If ownerSlotPlusOne is 0, the user was never added to the list
+        if (ownerSlotPlusOne == 0) revert UserDoesNotOwnSong();
+        
+        /// @dev Convert to 0-indexed position for array access
+        uint256 ownerSlot = ownerSlotPlusOne - 1;
+
+        /// @dev Get the last element's index and value for the swap operation
+        uint256 lastIndex = song[id].listOfOwners.length - 1;
+        uint256 lastUser = song[id].listOfOwners[lastIndex];
+
+        /// @dev Swap-and-pop: Only swap if the user is not already the last element
+        if (ownerSlot != lastIndex) {
+            /// @dev Move the last user to the position of the user being removed
+            song[id].listOfOwners[ownerSlot] = lastUser;
+            /// @dev Update the moved user's index in the mapping (store as 1-indexed)
+            ownerIndex[id][lastUser] = ownerSlot + 1;
+        }
+        
+        /// @dev Remove the last element (either the removed user or the duplicate after swap)
+        song[id].listOfOwners.pop();
+
+        /// @dev Clean up the removed user's index tracking
+        delete ownerIndex[id][userId];
+        /// @dev Remove ownership status from the user
+        delete ownByUserId[id][userId];
+
+        /// @dev Decrement the total purchase counter
+        song[id].TimesBought--;
 
         emit Refunded(id, userId, block.timestamp);
     }
@@ -305,7 +358,7 @@ contract SongDB is IdUtils, Ownable {
         bool canBePurchased,
         uint256 price
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
-        songs[id] = Metadata({
+        song[id] = Metadata({
             Title: title,
             PrincipalArtistId: principalArtistId,
             ArtistIDs: artistIDs,
@@ -313,8 +366,9 @@ contract SongDB is IdUtils, Ownable {
             MetadataURI: metadataURI,
             CanBePurchased: canBePurchased,
             Price: price,
-            TimesBought: songs[id].TimesBought,
-            IsBanned: songs[id].IsBanned
+            TimesBought: song[id].TimesBought,
+            listOfOwners: song[id].listOfOwners,
+            IsBanned: song[id].IsBanned
         });
 
         emit Changed(id, block.timestamp, ChangeType.MetadataUpdated);
@@ -322,7 +376,7 @@ contract SongDB is IdUtils, Ownable {
 
     /**
      * @notice Updates the purchasability status of a song
-     * @dev Only callable by owner. Cannot modify banned songs.
+     * @dev Only callable by owner. Cannot modify banned song.
      * @param id The song ID to update
      * @param canBePurchased New purchasability status (true = available for sale)
      */
@@ -330,14 +384,14 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         bool canBePurchased
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
-        songs[id].CanBePurchased = canBePurchased;
+        song[id].CanBePurchased = canBePurchased;
 
         emit Changed(id, block.timestamp, ChangeType.PurchaseabilityChanged);
     }
 
     /**
      * @notice Updates the net price of a song
-     * @dev Only callable by owner. Cannot modify banned songs.
+     * @dev Only callable by owner. Cannot modify banned song.
      *      This is the net price; fees and taxes are separate.
      * @param id The song ID to update
      * @param price New net purchase price for the song
@@ -346,14 +400,14 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         uint256 price
     ) external onlyOwner onlyIfNotBanned(id) onlyIfExist(id) {
-        songs[id].Price = price;
+        song[id].Price = price;
 
         emit Changed(id, block.timestamp, ChangeType.PriceChanged);
     }
 
     /**
      * @notice Sets the banned status of a song
-     * @dev Only callable by owner. Banned songs cannot be purchased or modified.
+     * @dev Only callable by owner. Banned song cannot be purchased or modified.
      * @param id The song ID to update
      * @param isBanned New banned status (true = banned from platform)
      */
@@ -361,12 +415,21 @@ contract SongDB is IdUtils, Ownable {
         uint256 id,
         bool isBanned
     ) external onlyOwner onlyIfExist(id) {
-        songs[id].IsBanned = isBanned;
+        song[id].IsBanned = isBanned;
 
         if (isBanned) emit Banned(id);
         else emit Unbanned(id);
     }
 
+    /**
+     * @notice Sets the public visibility of the song owners list
+     * @dev Only callable by owner. If set to false, only the owner (Orchestrator)
+     *      can view the full list of song owners.
+     * @param isVisible New visibility status (true = publicly visible)
+     */
+    function setListVisibility(bool isVisible) external onlyOwner {
+        listVisibility = isVisible;
+    }
     //🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮶 Getter Functions 🮵🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋🮋
     /**
      * @notice Checks if a user owns a specific song
@@ -427,7 +490,7 @@ contract SongDB is IdUtils, Ownable {
      *         (does not include fees or taxes)
      */
     function getPrice(uint256 id) external view returns (uint256) {
-        return songs[id].Price;
+        return song[id].Price;
     }
 
     /**
@@ -436,7 +499,7 @@ contract SongDB is IdUtils, Ownable {
      * @return The unique identifier of the principal artist
      */
     function getPrincipalArtistId(uint256 id) external view returns (uint256) {
-        return songs[id].PrincipalArtistId;
+        return song[id].PrincipalArtistId;
     }
 
     /**
@@ -445,7 +508,7 @@ contract SongDB is IdUtils, Ownable {
      * @return True if the song can be purchased, false otherwise
      */
     function isPurchasable(uint256 id) external view returns (bool) {
-        return songs[id].CanBePurchased;
+        return song[id].CanBePurchased;
     }
 
     /**
@@ -454,7 +517,7 @@ contract SongDB is IdUtils, Ownable {
      * @return True if the song is banned, false otherwise
      */
     function checkIsBanned(uint256 id) external view returns (bool) {
-        return songs[id].IsBanned;
+        return song[id].IsBanned;
     }
 
     /**
@@ -463,7 +526,23 @@ contract SongDB is IdUtils, Ownable {
      * @return Complete Metadata struct with all song information
      */
     function getMetadata(uint256 id) external view returns (Metadata memory) {
-        return songs[id];
+        return song[id];
+    }
+
+    /**
+     * @notice Retrieves the full list of user IDs that own a specific album
+     * @dev Respects the listVisibility setting; reverts if visibility is disabled
+     *      and caller is not the owner (Orchestrator).
+     * @param id The album ID to query
+     * @return Array of user IDs owning the album
+     */
+    function getListOfOwners(
+        uint256 id
+    ) external view returns (uint256[] memory) {
+        if (!listVisibility && msg.sender != owner())
+            revert CannotSeeListOfOwners();
+
+        return song[id].listOfOwners;
     }
 }
 
