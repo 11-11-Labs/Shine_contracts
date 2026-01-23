@@ -55,6 +55,8 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
+
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -124,8 +126,47 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.setBannedStatus(assignedId, true);
         vm.expectRevert(SongDB.SongIsBanned.selector);
+        _songDB.change(
+            assignedId,
+            "New Song Title",
+            2,
+            artistIDsAfter,
+            "ipfs://newMediaURI",
+            "ipfs://newMetadataURI",
+            false,
+            1000
+        );
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(assignedId).Title,
+            "Song Title",
+            "Song title should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__change__SongNotAssignedToAlbum() public {
+        uint256[] memory artistIDsBefore = new uint256[](2);
+        artistIDsBefore[0] = 2;
+        artistIDsBefore[1] = 3;
+
+        uint256[] memory artistIDsAfter = new uint256[](1);
+        artistIDsAfter[0] = 4;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDsBefore,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.expectRevert(SongDB.SongNotAssignedToAlbum.selector);
         _songDB.change(
             assignedId,
             "New Song Title",
@@ -160,6 +201,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -188,6 +230,7 @@ contract SongDB_test_unit_revert is Constants {
             false,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         vm.expectRevert(SongDB.SongCannotBePurchased.selector);
         _songDB.purchase(assignedId, 10);
         vm.stopPrank();
@@ -214,8 +257,35 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.setBannedStatus(assignedId, true);
         vm.expectRevert(SongDB.SongIsBanned.selector);
+        _songDB.purchase(assignedId, 10);
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__purchase__SongNotAssignedToAlbum() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.expectRevert(SongDB.SongNotAssignedToAlbum.selector);
         _songDB.purchase(assignedId, 10);
         vm.stopPrank();
 
@@ -241,6 +311,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.purchase(assignedId, 10);
         vm.expectRevert(SongDB.UserAlreadyOwns.selector);
         _songDB.purchase(assignedId, 10);
@@ -281,6 +352,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -322,6 +394,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.setBannedStatus(assignedId, true);
         vm.expectRevert(SongDB.SongIsBanned.selector);
         _songDB.gift(assignedId, 20);
@@ -349,6 +422,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.gift(assignedId, 20);
         vm.expectRevert(SongDB.UserAlreadyOwns.selector);
         _songDB.gift(assignedId, 20);
@@ -358,6 +432,32 @@ contract SongDB_test_unit_revert is Constants {
             _songDB.getMetadata(assignedId).TimesBought,
             1,
             "Times bought should remain 1 due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__gift__SongNotAssignedToAlbum() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.expectRevert(SongDB.SongNotAssignedToAlbum.selector);
+        _songDB.gift(assignedId, 20);
+        vm.stopPrank();
+
+        assertEq(
+            _songDB.getMetadata(assignedId).TimesBought,
+            0,
+            "Times bought should remain 0 due to revert"
         );
     }
 
@@ -376,6 +476,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.purchase(assignedId, 10);
         vm.stopPrank();
         vm.startPrank(USER.Address);
@@ -403,6 +504,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         vm.expectRevert(SongDB.UserDoesNotOwnSong.selector);
         _songDB.refund(assignedId, 10);
         vm.stopPrank();
@@ -437,6 +539,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -465,6 +568,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.setBannedStatus(assignedId, true);
         vm.expectRevert(SongDB.SongIsBanned.selector);
         _songDB.changePurchaseability(assignedId, false);
@@ -484,6 +588,32 @@ contract SongDB_test_unit_revert is Constants {
         vm.stopPrank();
     }
 
+    function test_unit_revert_SongDB__changePurchaseability__SongNotAssignedToAlbum()
+        public
+    {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.expectRevert(SongDB.SongNotAssignedToAlbum.selector);
+        _songDB.changePurchaseability(assignedId, false);
+        vm.stopPrank();
+        assertTrue(
+            _songDB.getMetadata(assignedId).CanBePurchased,
+            "Song purchaseability should be true after revert"
+        );
+    }
+
     function test_unit_revert_SongDB__changePrice__Unauthorized() public {
         uint256[] memory artistIDs = new uint256[](2);
         artistIDs[0] = 2;
@@ -499,6 +629,7 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         vm.stopPrank();
         vm.startPrank(USER.Address);
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -526,8 +657,34 @@ contract SongDB_test_unit_revert is Constants {
             true,
             500
         );
+        _songDB.assignToAlbum(assignedId, 1);
         _songDB.setBannedStatus(assignedId, true);
         vm.expectRevert(SongDB.SongIsBanned.selector);
+        _songDB.changePrice(assignedId, 1000);
+        vm.stopPrank();
+        assertEq(
+            _songDB.getMetadata(assignedId).Price,
+            500,
+            "Song price should be unchanged due to revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__changePrice__SongNotAssignedToAlbum() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.expectRevert(SongDB.SongNotAssignedToAlbum.selector);
         _songDB.changePrice(assignedId, 1000);
         vm.stopPrank();
         assertEq(
@@ -544,7 +701,7 @@ contract SongDB_test_unit_revert is Constants {
         vm.stopPrank();
     }
 
-    function test_unit_correct_SongDB__setBannedStatus__Unauthorized() public {
+    function test_unit_revert_SongDB__setBannedStatus__Unauthorized() public {
         uint256[] memory artistIDs = new uint256[](2);
         artistIDs[0] = 2;
         artistIDs[1] = 3;
@@ -570,7 +727,7 @@ contract SongDB_test_unit_revert is Constants {
         );
     }
 
-    function test_unit_correct_SongDB__setBannedStatus__SongDoesNotExist()
+    function test_unit_revert_SongDB__setBannedStatus__SongDoesNotExist()
         public
     {
         vm.startPrank(FAKE_ORCHESTRATOR.Address);
@@ -578,4 +735,205 @@ contract SongDB_test_unit_revert is Constants {
         _songDB.setBannedStatus(77, true);
         vm.stopPrank();
     }
+
+    function test_unit_revert_SongDB__setBannedStatusBatch__Unauthorized() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        uint256[] memory songIds = new uint256[](1);
+        songIds[0] = assignedId;
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _songDB.setBannedStatusBatch(songIds, true);
+        vm.stopPrank();
+        assertFalse(
+            _songDB.getMetadata(assignedId).IsBanned,
+            "Song banned status should remain false after revert"
+        );
+    }
+
+    function test_unit_revert_SongDB__setBannedStatusBatch__SongDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256[] memory songIds = new uint256[](1);
+        songIds[0] = 88;
+        vm.expectRevert(SongDB.SongDoesNotExist.selector);
+        _songDB.setBannedStatusBatch(songIds, false);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbum__Unauthorized() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _songDB.assignToAlbum(assignedId, 1);
+        vm.stopPrank();
+    }
+    function test_unit_revert_SongDB__assignToAlbum__SongDoesNotExist() public {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        vm.expectRevert(SongDB.SongDoesNotExist.selector);
+        _songDB.assignToAlbum(1234, 1);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbum__SongIsBanned() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        _songDB.setBannedStatus(assignedId, true);
+        vm.expectRevert(SongDB.SongIsBanned.selector);
+        _songDB.assignToAlbum(assignedId, 1);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbum__AlbumIdCannotBeZero() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.expectRevert(SongDB.AlbumIdCannotBeZero.selector);
+        _songDB.assignToAlbum(assignedId, 0);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbumBatch__Unauthorized() public {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        vm.stopPrank();
+        vm.startPrank(USER.Address);
+        uint256[] memory songIds = new uint256[](1);
+        songIds[0] = assignedId;
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _songDB.assignToAlbumBatch(songIds, 1);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbumBatch__SongDoesNotExist()
+        public
+    {
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256[] memory songIds = new uint256[](1);
+        songIds[0] = 99;
+        vm.expectRevert(SongDB.SongDoesNotExist.selector);
+        _songDB.assignToAlbumBatch(songIds, 1);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbumBatch__SongIsBanned()
+        public
+    {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        _songDB.setBannedStatus(assignedId, true);
+        uint256[] memory songIds = new uint256[](1);
+        songIds[0] = assignedId;
+        vm.expectRevert(SongDB.SongIsBanned.selector);
+        _songDB.assignToAlbumBatch(songIds, 1);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__assignToAlbumBatch__AlbumIdCannotBeZero()
+        public
+    {
+        uint256[] memory artistIDs = new uint256[](2);
+        artistIDs[0] = 2;
+        artistIDs[1] = 3;
+
+        vm.startPrank(FAKE_ORCHESTRATOR.Address);
+        uint256 assignedId = _songDB.register(
+            "Song Title",
+            1,
+            artistIDs,
+            "ipfs://mediaURI",
+            "ipfs://metadataURI",
+            true,
+            500
+        );
+        uint256[] memory songIds = new uint256[](1);
+        songIds[0] = assignedId;
+        vm.expectRevert(SongDB.AlbumIdCannotBeZero.selector);
+        _songDB.assignToAlbumBatch(songIds, 0);
+        vm.stopPrank();
+    }
+
+    function test_unit_revert_SongDB__setListVisibility__Unauthorized() public {
+        vm.startPrank(USER.Address);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        _songDB.setListVisibility(false);
+        vm.stopPrank();
+    }
+
+
 }
