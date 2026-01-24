@@ -18,7 +18,7 @@ pragma solidity ^0.8.20;
  */
 
 import {Ownable} from "@solady/auth/Ownable.sol";
-import {IERC20} from "@shine/interface/IERC20.sol";
+import {IERC20} from "@shine/library/IERC20.sol";
 import {ErrorsLib} from "@shine/contracts/orchestrator/library/ErrorsLib.sol";
 import {StructsLib} from "@shine/contracts/orchestrator/library/StructsLib.sol";
 import {EventsLib} from "@shine/contracts/orchestrator/library/EventsLib.sol";
